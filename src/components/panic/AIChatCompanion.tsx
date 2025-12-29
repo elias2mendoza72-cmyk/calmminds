@@ -19,9 +19,8 @@ const QUICK_PROMPTS = [
 ];
 
 export default function AIChatCompanion() {
-  const [messages, setMessages] = useState<Message[]>([
-    { role: "assistant", content: "I'm here with you. You're safe. Would you like to tell me what you're feeling right now? 💙" }
-  ]);
+  const [userName, setUserName] = useState<string | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -31,8 +30,49 @@ export default function AIChatCompanion() {
   };
 
   useEffect(() => {
+    fetchUserProfile();
+  }, []);
+
+  useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  const fetchUserProfile = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("display_name")
+          .eq("id", user.id)
+          .single();
+        
+        if (profile?.display_name) {
+          setUserName(profile.display_name);
+          setMessages([{
+            role: "assistant",
+            content: `Hi ${profile.display_name}! I'm so glad you're here. You're safe with me. Would you like to tell me what you're feeling right now? 💙`
+          }]);
+        } else {
+          setMessages([{
+            role: "assistant",
+            content: "I'm here with you. You're safe. Would you like to tell me what you're feeling right now? 💙"
+          }]);
+        }
+      } else {
+        setMessages([{
+          role: "assistant",
+          content: "I'm here with you. You're safe. Would you like to tell me what you're feeling right now? 💙"
+        }]);
+      }
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+      setMessages([{
+        role: "assistant",
+        content: "I'm here with you. You're safe. Would you like to tell me what you're feeling right now? 💙"
+      }]);
+    }
+  };
 
   const sendMessage = async (messageText?: string) => {
     const userMessage = (messageText || input).trim();
@@ -47,11 +87,12 @@ export default function AIChatCompanion() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       
-      // Send conversation history for context
+      // Send conversation history for context, include user name
       const response = await supabase.functions.invoke("panic-chat", {
         body: { 
           message: userMessage, 
-          history: messages // Send existing messages as history
+          history: messages,
+          userName: userName
         },
         headers: session ? { Authorization: `Bearer ${session.access_token}` } : {},
       });
