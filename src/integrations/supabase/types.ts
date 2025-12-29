@@ -170,6 +170,93 @@ export type Database = {
         }
         Relationships: []
       }
+      user_badges: {
+        Row: {
+          badge_id: string
+          earned_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          badge_id: string
+          earned_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          badge_id?: string
+          earned_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_streaks: {
+        Row: {
+          created_at: string
+          current_streak: number
+          id: string
+          last_log_date: string | null
+          longest_streak: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_streak?: number
+          id?: string
+          last_log_date?: string | null
+          longest_streak?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_streak?: number
+          id?: string
+          last_log_date?: string | null
+          longest_streak?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      weekly_achievements: {
+        Row: {
+          achievement_unlocked: boolean
+          created_at: string
+          id: string
+          journals_written: number
+          moods_logged: number
+          tasks_completed: number
+          updated_at: string
+          user_id: string
+          week_start: string
+        }
+        Insert: {
+          achievement_unlocked?: boolean
+          created_at?: string
+          id?: string
+          journals_written?: number
+          moods_logged?: number
+          tasks_completed?: number
+          updated_at?: string
+          user_id: string
+          week_start: string
+        }
+        Update: {
+          achievement_unlocked?: boolean
+          created_at?: string
+          id?: string
+          journals_written?: number
+          moods_logged?: number
+          tasks_completed?: number
+          updated_at?: string
+          user_id?: string
+          week_start?: string
+        }
+        Relationships: []
+      }
       weekly_tasks: {
         Row: {
           completed_at: string | null

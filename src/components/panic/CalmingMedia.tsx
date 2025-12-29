@@ -1,13 +1,39 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
 import { Play, Pause, Volume2 } from "lucide-react";
 
+// Free ambient audio URLs from reliable sources
 const CALMING_SOUNDS = [
-  { id: "rain", name: "Gentle Rain", emoji: "🌧️", color: "bg-blue-500/20" },
-  { id: "ocean", name: "Ocean Waves", emoji: "🌊", color: "bg-cyan-500/20" },
-  { id: "forest", name: "Forest Birds", emoji: "🌲", color: "bg-green-500/20" },
-  { id: "fire", name: "Crackling Fire", emoji: "🔥", color: "bg-orange-500/20" },
+  { 
+    id: "rain", 
+    name: "Gentle Rain", 
+    emoji: "🌧️", 
+    color: "bg-blue-500/20",
+    audioUrl: "https://cdn.pixabay.com/audio/2022/05/13/audio_257112ce99.mp3" // Rain sounds
+  },
+  { 
+    id: "ocean", 
+    name: "Ocean Waves", 
+    emoji: "🌊", 
+    color: "bg-cyan-500/20",
+    audioUrl: "https://cdn.pixabay.com/audio/2024/11/29/audio_f7c5c78d4e.mp3" // Ocean waves
+  },
+  { 
+    id: "forest", 
+    name: "Forest Birds", 
+    emoji: "🌲", 
+    color: "bg-green-500/20",
+    audioUrl: "https://cdn.pixabay.com/audio/2022/02/14/audio_5e04e8d053.mp3" // Forest ambience
+  },
+  { 
+    id: "fire", 
+    name: "Crackling Fire", 
+    emoji: "🔥", 
+    color: "bg-orange-500/20",
+    audioUrl: "https://cdn.pixabay.com/audio/2024/02/28/audio_3b1ec44e93.mp3" // Fire crackling
+  },
 ];
 
 const AFFIRMATIONS = [
@@ -22,9 +48,52 @@ const AFFIRMATIONS = [
 export default function CalmingMedia() {
   const [activeSound, setActiveSound] = useState<string | null>(null);
   const [affirmationIndex, setAffirmationIndex] = useState(0);
+  const [volume, setVolume] = useState(0.5);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    // Cleanup audio on unmount
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
 
   const toggleSound = (id: string) => {
-    setActiveSound(activeSound === id ? null : id);
+    if (activeSound === id) {
+      // Stop current sound
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+      setActiveSound(null);
+    } else {
+      // Stop previous sound if any
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      
+      // Play new sound
+      const sound = CALMING_SOUNDS.find(s => s.id === id);
+      if (sound) {
+        const audio = new Audio(sound.audioUrl);
+        audio.loop = true;
+        audio.volume = volume;
+        audio.play().catch(console.error);
+        audioRef.current = audio;
+        setActiveSound(id);
+      }
+    }
+  };
+
+  const handleVolumeChange = (value: number[]) => {
+    const newVolume = value[0];
+    setVolume(newVolume);
+    if (audioRef.current) {
+      audioRef.current.volume = newVolume;
+    }
   };
 
   const nextAffirmation = () => {
@@ -84,8 +153,23 @@ export default function CalmingMedia() {
             </Card>
           ))}
         </div>
+        
+        {/* Volume control */}
+        {activeSound && (
+          <div className="flex items-center gap-3 mt-4 px-2">
+            <Volume2 className="w-4 h-4 text-panic-text/60" />
+            <Slider
+              value={[volume]}
+              onValueChange={handleVolumeChange}
+              max={1}
+              step={0.1}
+              className="flex-1"
+            />
+          </div>
+        )}
+        
         <p className="text-xs text-panic-text/40 mt-3 text-center">
-          Sound visualization only • Close your eyes and imagine
+          Tap to play real calming sounds
         </p>
       </div>
     </div>

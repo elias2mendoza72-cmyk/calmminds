@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useGamification } from "@/hooks/useGamification";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -64,6 +65,7 @@ export default function Journal() {
   const [saving, setSaving] = useState(false);
 
   const { user } = useAuth();
+  const { updateWeeklyProgress, checkTotalBadges } = useGamification();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -154,6 +156,10 @@ export default function Journal() {
 
         if (error) throw error;
         toast({ title: "Entry saved" });
+        
+        // Update gamification for new journal entry
+        updateWeeklyProgress("journal");
+        checkTotalBadges();
       }
 
       setIsWriting(false);
