@@ -103,13 +103,29 @@ export default function Dashboard() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       
-      const response = await supabase.functions.invoke("generate-tasks", {
+      if (!session?.access_token) {
+        toast({
+          title: "Please sign in",
+          description: "You need to be signed in to generate tasks.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      const { data, error } = await supabase.functions.invoke("generate-tasks", {
         headers: {
-          Authorization: `Bearer ${session?.access_token}`,
+          Authorization: `Bearer ${session.access_token}`,
         },
       });
 
-      if (response.error) throw response.error;
+      if (error) {
+        console.error("Function error:", error);
+        throw error;
+      }
+      
+      if (data?.error) {
+        throw new Error(data.error);
+      }
 
       toast({
         title: "New tasks generated!",
@@ -121,7 +137,7 @@ export default function Dashboard() {
       console.error("Error generating tasks:", error);
       toast({
         title: "Error",
-        description: "Failed to generate tasks. Please try again.",
+        description: error?.message || "Failed to generate tasks. Please try again.",
         variant: "destructive",
       });
     } finally {
