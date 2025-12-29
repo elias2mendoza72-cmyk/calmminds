@@ -1,14 +1,57 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Send, Loader2, Heart } from "lucide-react";
+import { Send, Loader2, Heart, Mic, MicOff } from "lucide-react";
 import { toast } from "sonner";
 
 interface Message {
   role: "user" | "assistant";
   content: string;
+}
+
+// Type declarations for Web Speech API
+interface SpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList;
+  resultIndex: number;
+}
+
+interface SpeechRecognitionResultList {
+  length: number;
+  item(index: number): SpeechRecognitionResult;
+  [index: number]: SpeechRecognitionResult;
+}
+
+interface SpeechRecognitionResult {
+  isFinal: boolean;
+  length: number;
+  item(index: number): SpeechRecognitionAlternative;
+  [index: number]: SpeechRecognitionAlternative;
+}
+
+interface SpeechRecognitionAlternative {
+  transcript: string;
+  confidence: number;
+}
+
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: ((event: SpeechRecognitionEvent) => void) | null;
+  onerror: ((event: Event) => void) | null;
+  onend: (() => void) | null;
+  start(): void;
+  stop(): void;
+  abort(): void;
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition: new () => SpeechRecognition;
+    webkitSpeechRecognition: new () => SpeechRecognition;
+  }
 }
 
 const QUICK_PROMPTS = [
@@ -23,11 +66,79 @@ export default function AIChatCompanion() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+
+  // Check for speech recognition support
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      setSpeechSupported(true);
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = true;
+      recognitionRef.current.lang = "en-US";
+
+      recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
+        let finalTranscript = "";
+        let interimTranscript = "";
+        
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript;
+          } else {
+            interimTranscript += transcript;
+          }
+        }
+        
+        if (finalTranscript) {
+          setInput(finalTranscript);
+        } else if (interimTranscript) {
+          setInput(interimTranscript);
+        }
+      };
+
+      recognitionRef.current.onerror = () => {
+        setIsListening(false);
+        toast.error("Voice input error. Please try again.");
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+      };
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.abort();
+      }
+    };
+  }, []);
+
+  const toggleListening = useCallback(() => {
+    if (!recognitionRef.current) return;
+
+    if (isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    } else {
+      try {
+        recognitionRef.current.start();
+        setIsListening(true);
+        toast.info("Listening... speak now", { duration: 2000 });
+      } catch (error) {
+        console.error("Speech recognition error:", error);
+        toast.error("Could not start voice input");
+      }
+    }
+  }, [isListening]);
 
   useEffect(() => {
     fetchUserProfile();
@@ -188,10 +299,25 @@ export default function AIChatCompanion() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
-              placeholder="Type how you're feeling..."
+              placeholder={isListening ? "Listening..." : "Type or speak how you're feeling..."}
               className="bg-panic-accent/10 border-panic-accent/30 text-panic-text placeholder:text-panic-text/40"
               disabled={loading}
             />
+            {speechSupported && (
+              <Button
+                onClick={toggleListening}
+                disabled={loading}
+                size="icon"
+                variant="outline"
+                className={`border-panic-accent/30 ${
+                  isListening 
+                    ? "bg-red-500/20 text-red-400 border-red-400/50 animate-pulse" 
+                    : "text-panic-text/70 hover:bg-panic-accent/10"
+                }`}
+              >
+                {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              </Button>
+            )}
             <Button
               onClick={() => sendMessage()}
               disabled={loading || !input.trim()}
