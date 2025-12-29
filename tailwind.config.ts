@@ -13,6 +13,10 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        display: ["Quicksand", "sans-serif"],
+        body: ["Nunito", "sans-serif"],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -57,28 +61,41 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        // CalmMind custom colors
+        calm: {
+          sage: "hsl(var(--calm-sage))",
+          lavender: "hsl(var(--calm-lavender))",
+          peach: "hsl(var(--calm-peach))",
+          cream: "hsl(var(--calm-cream))",
+          terracotta: "hsl(var(--calm-terracotta))",
+          forest: "hsl(var(--calm-forest))",
+        },
+        panic: {
+          bg: "hsl(var(--panic-bg))",
+          accent: "hsl(var(--panic-accent))",
+          text: "hsl(var(--panic-text))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        xl: "calc(var(--radius) + 4px)",
+        "2xl": "calc(var(--radius) + 8px)",
+      },
+      boxShadow: {
+        soft: "0 4px 20px -2px hsl(var(--primary) / 0.1)",
+        warm: "0 8px 30px -4px hsl(var(--calm-terracotta) / 0.15)",
+        glow: "0 0 40px hsl(var(--calm-peach) / 0.3)",
       },
       keyframes: {
         "accordion-down": {
-          from: {
-            height: "0",
-          },
-          to: {
-            height: "var(--radix-accordion-content-height)",
-          },
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
         },
         "accordion-up": {
-          from: {
-            height: "var(--radix-accordion-content-height)",
-          },
-          to: {
-            height: "0",
-          },
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
         },
       },
       animation: {
