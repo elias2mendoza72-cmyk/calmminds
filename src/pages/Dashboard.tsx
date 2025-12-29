@@ -15,7 +15,8 @@ import {
   LogOut,
   Sparkles,
   Calendar,
-  Heart
+  Heart,
+  BookOpen,
 } from "lucide-react";
 
 interface Task {
@@ -176,6 +177,15 @@ export default function Dashboard() {
           </div>
 
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={() => navigate("/journal")}
+            >
+              <BookOpen className="w-4 h-4" />
+              Journal
+            </Button>
             <Button
               variant="destructive"
               size="lg"
