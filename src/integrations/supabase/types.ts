@@ -137,6 +137,39 @@ export type Database = {
         }
         Relationships: []
       }
+      reminder_preferences: {
+        Row: {
+          created_at: string | null
+          daily_mood_reminder: boolean | null
+          email: string | null
+          id: string
+          reminder_time: string | null
+          updated_at: string | null
+          user_id: string
+          weekly_task_reminder: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          daily_mood_reminder?: boolean | null
+          email?: string | null
+          id?: string
+          reminder_time?: string | null
+          updated_at?: string | null
+          user_id: string
+          weekly_task_reminder?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          daily_mood_reminder?: boolean | null
+          email?: string | null
+          id?: string
+          reminder_time?: string | null
+          updated_at?: string | null
+          user_id?: string
+          weekly_task_reminder?: boolean | null
+        }
+        Relationships: []
+      }
       weekly_tasks: {
         Row: {
           completed_at: string | null
