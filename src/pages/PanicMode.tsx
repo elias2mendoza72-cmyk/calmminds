@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Wind, Eye, MessageCircle, Music, X, Gamepad2, Sparkles, Palette, Mountain } from "lucide-react";
+import { ArrowLeft, Wind, Eye, MessageCircle, Music, X, Gamepad2, Sparkles, Palette, Mountain, Video, Phone } from "lucide-react";
 import BreathingExercise from "@/components/panic/BreathingExercise";
 import GroundingExercise from "@/components/panic/GroundingExercise";
 import AIChatCompanion from "@/components/panic/AIChatCompanion";
@@ -11,22 +11,26 @@ import MiniGame from "@/components/panic/MiniGame";
 import GuidedVisualization from "@/components/panic/GuidedVisualization";
 import PositiveAffirmations from "@/components/panic/PositiveAffirmations";
 import ColoringCanvas from "@/components/panic/ColoringCanvas";
+import CalmingVideos from "@/components/panic/CalmingVideos";
+import EmergencyContacts from "@/components/panic/EmergencyContacts";
 
-type PanicFeature = "breathing" | "grounding" | "chat" | "media" | "game" | "visualization" | "affirmations" | "coloring" | null;
+type PanicFeature = "breathing" | "grounding" | "chat" | "media" | "game" | "visualization" | "affirmations" | "coloring" | "videos" | "emergency" | null;
 
 export default function PanicMode() {
   const [activeFeature, setActiveFeature] = useState<PanicFeature>(null);
   const navigate = useNavigate();
 
   const features = [
-    { id: "breathing" as const, icon: Wind, label: "Breathing", description: "Guided breathing exercises", color: "from-blue-500/20 to-cyan-500/20" },
+    { id: "breathing" as const, icon: Wind, label: "Breathing", description: "Guided exercises", color: "from-blue-500/20 to-cyan-500/20" },
     { id: "grounding" as const, icon: Eye, label: "Grounding", description: "5-4-3-2-1 technique", color: "from-green-500/20 to-emerald-500/20" },
     { id: "chat" as const, icon: MessageCircle, label: "Talk", description: "AI companion", color: "from-purple-500/20 to-pink-500/20" },
     { id: "media" as const, icon: Music, label: "Sounds", description: "Calming audio", color: "from-orange-500/20 to-amber-500/20" },
+    { id: "videos" as const, icon: Video, label: "Videos", description: "Nature scenes", color: "from-sky-500/20 to-blue-500/20" },
     { id: "game" as const, icon: Gamepad2, label: "Game", description: "Memory match", color: "from-rose-500/20 to-red-500/20" },
     { id: "visualization" as const, icon: Mountain, label: "Journey", description: "Guided imagery", color: "from-teal-500/20 to-cyan-500/20" },
     { id: "affirmations" as const, icon: Sparkles, label: "Affirm", description: "Positive words", color: "from-yellow-500/20 to-orange-500/20" },
     { id: "coloring" as const, icon: Palette, label: "Color", description: "Mindful art", color: "from-indigo-500/20 to-violet-500/20" },
+    { id: "emergency" as const, icon: Phone, label: "Help", description: "Emergency contacts", color: "from-red-500/20 to-pink-500/20" },
   ];
 
   return (
@@ -97,10 +101,12 @@ export default function PanicMode() {
             {activeFeature === "grounding" && <GroundingExercise />}
             {activeFeature === "chat" && <AIChatCompanion />}
             {activeFeature === "media" && <CalmingMedia />}
+            {activeFeature === "videos" && <CalmingVideos />}
             {activeFeature === "game" && <MiniGame />}
             {activeFeature === "visualization" && <GuidedVisualization />}
             {activeFeature === "affirmations" && <PositiveAffirmations />}
             {activeFeature === "coloring" && <ColoringCanvas />}
+            {activeFeature === "emergency" && <EmergencyContacts />}
           </div>
         )}
       </main>
