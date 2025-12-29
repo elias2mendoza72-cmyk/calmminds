@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Send, Loader2, Heart, Mic, MicOff } from "lucide-react";
+import { Send, Loader2, Heart, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
 
 interface Message {
@@ -68,12 +68,77 @@ export default function AIChatCompanion() {
   const [loading, setLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
+  const [ttsEnabled, setTtsEnabled] = useState(true);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+
+  // Speak text using Web Speech Synthesis
+  const speakText = useCallback((text: string) => {
+    if (!ttsEnabled || !("speechSynthesis" in window)) return;
+
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel();
+
+    // Clean text for speech (remove emojis)
+    const cleanText = text.replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, "");
+
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.rate = 0.9; // Slightly slower for calming effect
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+
+    // Try to find a calming female voice
+    const voices = window.speechSynthesis.getVoices();
+    const preferredVoice = voices.find(
+      (v) => v.name.includes("Samantha") || v.name.includes("Google UK English Female") || v.name.includes("Microsoft Zira")
+    ) || voices.find((v) => v.lang.startsWith("en") && v.name.toLowerCase().includes("female")) || voices[0];
+    
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+    }
+
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
+    utteranceRef.current = utterance;
+    window.speechSynthesis.speak(utterance);
+  }, [ttsEnabled]);
+
+  // Stop speaking
+  const stopSpeaking = useCallback(() => {
+    window.speechSynthesis.cancel();
+    setIsSpeaking(false);
+  }, []);
+
+  // Toggle TTS
+  const toggleTts = useCallback(() => {
+    if (isSpeaking) {
+      stopSpeaking();
+    }
+    setTtsEnabled((prev) => !prev);
+    toast.info(ttsEnabled ? "Voice output disabled" : "Voice output enabled", { duration: 2000 });
+  }, [isSpeaking, stopSpeaking, ttsEnabled]);
+
+  // Load voices when available
+  useEffect(() => {
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.getVoices();
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
+      };
+    }
+
+    return () => {
+      window.speechSynthesis.cancel();
+    };
+  }, []);
 
   // Check for speech recognition support
   useEffect(() => {
@@ -221,15 +286,19 @@ export default function AIChatCompanion() {
       
       if (data.reply) {
         setMessages(prev => [...prev, { role: "assistant", content: data.reply }]);
+        // Auto-speak the response if TTS is enabled
+        speakText(data.reply);
       } else {
         throw new Error("No reply received");
       }
     } catch (error) {
       console.error("Chat error:", error);
+      const fallbackMessage = "I'm here with you. Take a slow, deep breath in... and out. You're doing great just by reaching out. What's on your mind?";
       setMessages(prev => [...prev, { 
         role: "assistant", 
-        content: "I'm here with you. Take a slow, deep breath in... and out. You're doing great just by reaching out. What's on your mind?" 
+        content: fallbackMessage 
       }]);
+      speakText(fallbackMessage);
     } finally {
       setLoading(false);
     }
@@ -247,6 +316,28 @@ export default function AIChatCompanion() {
         </div>
         <h2 className="text-xl font-display font-semibold">Calm Companion</h2>
         <p className="text-xs text-panic-text/50 mt-1">A supportive space to share how you're feeling</p>
+        
+        {/* TTS Toggle */}
+        <button
+          onClick={toggleTts}
+          className={`mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs transition-colors ${
+            ttsEnabled 
+              ? "bg-panic-accent/20 text-panic-accent" 
+              : "bg-panic-accent/10 text-panic-text/50"
+          }`}
+        >
+          {ttsEnabled ? (
+            <>
+              <Volume2 className="w-3 h-3" />
+              Voice On {isSpeaking && <span className="animate-pulse">●</span>}
+            </>
+          ) : (
+            <>
+              <VolumeX className="w-3 h-3" />
+              Voice Off
+            </>
+          )}
+        </button>
       </div>
 
       <Card className="flex-1 bg-panic-accent/5 border-panic-accent/20 overflow-hidden">
