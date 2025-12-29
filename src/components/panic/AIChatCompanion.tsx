@@ -1,50 +1,90 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Send, Loader2, Heart } from "lucide-react";
+import { toast } from "sonner";
 
 interface Message {
   role: "user" | "assistant";
   content: string;
 }
 
+const QUICK_PROMPTS = [
+  "I'm feeling anxious",
+  "I can't calm down",
+  "I'm scared",
+  "Help me breathe",
+];
+
 export default function AIChatCompanion() {
   const [messages, setMessages] = useState<Message[]>([
-    { role: "assistant", content: "I'm here with you. You're safe. Would you like to tell me what you're feeling right now?" }
+    { role: "assistant", content: "I'm here with you. You're safe. Would you like to tell me what you're feeling right now? 💙" }
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const sendMessage = async () => {
-    if (!input.trim() || loading) return;
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
-    const userMessage = input.trim();
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const sendMessage = async (messageText?: string) => {
+    const userMessage = (messageText || input).trim();
+    if (!userMessage || loading) return;
+
     setInput("");
-    setMessages(prev => [...prev, { role: "user", content: userMessage }]);
+    const newUserMessage: Message = { role: "user", content: userMessage };
+    const updatedMessages = [...messages, newUserMessage];
+    setMessages(updatedMessages);
     setLoading(true);
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
       
+      // Send conversation history for context
       const response = await supabase.functions.invoke("panic-chat", {
-        body: { message: userMessage, history: messages },
+        body: { 
+          message: userMessage, 
+          history: messages // Send existing messages as history
+        },
         headers: session ? { Authorization: `Bearer ${session.access_token}` } : {},
       });
 
-      if (response.error) throw response.error;
+      if (response.error) {
+        console.error("Function error:", response.error);
+        throw response.error;
+      }
 
-      setMessages(prev => [...prev, { role: "assistant", content: response.data.reply }]);
+      const data = response.data;
+      
+      if (data.error === "rate_limit") {
+        toast.info("Taking a moment... please try again shortly");
+      }
+      
+      if (data.reply) {
+        setMessages(prev => [...prev, { role: "assistant", content: data.reply }]);
+      } else {
+        throw new Error("No reply received");
+      }
     } catch (error) {
       console.error("Chat error:", error);
       setMessages(prev => [...prev, { 
         role: "assistant", 
-        content: "I'm here with you. Take a slow, deep breath. You're doing great just by reaching out." 
+        content: "I'm here with you. Take a slow, deep breath in... and out. You're doing great just by reaching out. What's on your mind?" 
       }]);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleQuickPrompt = (prompt: string) => {
+    sendMessage(prompt);
   };
 
   return (
@@ -54,6 +94,7 @@ export default function AIChatCompanion() {
           <Heart className="w-6 h-6 text-panic-accent" />
         </div>
         <h2 className="text-xl font-display font-semibold">Calm Companion</h2>
+        <p className="text-xs text-panic-text/50 mt-1">A supportive space to share how you're feeling</p>
       </div>
 
       <Card className="flex-1 bg-panic-accent/5 border-panic-accent/20 overflow-hidden">
@@ -62,10 +103,10 @@ export default function AIChatCompanion() {
             {messages.map((msg, i) => (
               <div
                 key={i}
-                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-fade-in`}
               >
                 <div
-                  className={`max-w-[80%] p-3 rounded-2xl ${
+                  className={`max-w-[85%] p-3 rounded-2xl ${
                     msg.role === "user"
                       ? "bg-panic-accent text-panic-bg"
                       : "bg-panic-accent/20 text-panic-text"
@@ -76,24 +117,42 @@ export default function AIChatCompanion() {
               </div>
             ))}
             {loading && (
-              <div className="flex justify-start">
-                <div className="bg-panic-accent/20 p-3 rounded-2xl">
+              <div className="flex justify-start animate-fade-in">
+                <div className="bg-panic-accent/20 p-3 rounded-2xl flex items-center gap-2">
                   <Loader2 className="w-4 h-4 animate-spin" />
+                  <span className="text-sm text-panic-text/70">Listening...</span>
                 </div>
               </div>
             )}
+            <div ref={messagesEndRef} />
           </div>
+
+          {/* Quick prompts - show only at start */}
+          {messages.length === 1 && !loading && (
+            <div className="flex flex-wrap gap-2 mb-3">
+              {QUICK_PROMPTS.map((prompt) => (
+                <button
+                  key={prompt}
+                  onClick={() => handleQuickPrompt(prompt)}
+                  className="text-xs px-3 py-1.5 rounded-full bg-panic-accent/10 text-panic-text/80 hover:bg-panic-accent/20 transition-colors"
+                >
+                  {prompt}
+                </button>
+              ))}
+            </div>
+          )}
 
           <div className="flex gap-2">
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyPress={(e) => e.key === "Enter" && sendMessage()}
+              onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
               placeholder="Type how you're feeling..."
               className="bg-panic-accent/10 border-panic-accent/30 text-panic-text placeholder:text-panic-text/40"
+              disabled={loading}
             />
             <Button
-              onClick={sendMessage}
+              onClick={() => sendMessage()}
               disabled={loading || !input.trim()}
               size="icon"
               className="bg-panic-accent text-panic-bg hover:bg-panic-accent/90"
