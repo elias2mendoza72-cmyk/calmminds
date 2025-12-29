@@ -15,12 +15,19 @@ serve(async (req) => {
     const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
     if (!lovableApiKey) throw new Error("LOVABLE_API_KEY not configured");
 
-    const { message, history } = await req.json();
+    const { message, history, userName } = await req.json();
     
     console.log("Received message:", message);
     console.log("History length:", history?.length || 0);
+    console.log("User name:", userName || "not provided");
+
+    const nameContext = userName 
+      ? `The user's name is ${userName}. Use their name naturally and warmly in your responses to create a personal connection - but don't overuse it. Using their name once or twice per response feels caring without being excessive.`
+      : "The user hasn't shared their name yet, so use warm terms like 'friend' or 'dear one' occasionally.";
 
     const systemPrompt = `You are a deeply compassionate, warm companion named "Calm" helping someone through anxiety or a panic attack. Your role is to be a beacon of comfort and understanding in their moment of distress.
+
+${nameContext}
 
 **How to respond:**
 - Write thoughtful, comprehensive responses (4-8 sentences minimum)
