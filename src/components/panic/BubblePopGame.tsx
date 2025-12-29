@@ -1,0 +1,145 @@
+import { useState, useEffect, useCallback } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
+
+interface Bubble {
+  id: number;
+  x: number;
+  y: number;
+  size: number;
+  color: string;
+  speed: number;
+  popped: boolean;
+}
+
+const COLORS = [
+  "bg-blue-400/80",
+  "bg-purple-400/80",
+  "bg-pink-400/80",
+  "bg-cyan-400/80",
+  "bg-teal-400/80",
+  "bg-indigo-400/80",
+];
+
+export default function BubblePopGame() {
+  const [bubbles, setBubbles] = useState<Bubble[]>([]);
+  const [score, setScore] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const createBubble = useCallback((): Bubble => {
+    return {
+      id: Date.now() + Math.random(),
+      x: Math.random() * 80 + 10,
+      y: 110,
+      size: Math.random() * 30 + 25,
+      color: COLORS[Math.floor(Math.random() * COLORS.length)],
+      speed: Math.random() * 0.5 + 0.3,
+      popped: false,
+    };
+  }, []);
+
+  const startGame = () => {
+    setBubbles([]);
+    setScore(0);
+    setIsPlaying(true);
+  };
+
+  const popBubble = (id: number) => {
+    setBubbles(prev =>
+      prev.map(b =>
+        b.id === id ? { ...b, popped: true } : b
+      )
+    );
+    setScore(s => s + 1);
+  };
+
+  useEffect(() => {
+    if (!isPlaying) return;
+
+    const spawnInterval = setInterval(() => {
+      setBubbles(prev => [...prev.slice(-20), createBubble()]);
+    }, 800);
+
+    return () => clearInterval(spawnInterval);
+  }, [isPlaying, createBubble]);
+
+  useEffect(() => {
+    if (!isPlaying) return;
+
+    const moveInterval = setInterval(() => {
+      setBubbles(prev =>
+        prev
+          .map(b => ({ ...b, y: b.y - b.speed }))
+          .filter(b => b.y > -20 && !b.popped)
+      );
+    }, 50);
+
+    return () => clearInterval(moveInterval);
+  }, [isPlaying]);
+
+  return (
+    <div className="space-y-4">
+      <Card className="bg-panic-accent/10 border-panic-accent/20">
+        <CardContent className="p-4">
+          <div className="flex justify-between items-center mb-3">
+            <div>
+              <span className="text-panic-text/60 text-sm">Bubbles popped</span>
+              <p className="text-2xl font-display font-bold text-panic-accent">{score}</p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={startGame}
+              className="border-panic-accent/30 text-panic-accent hover:bg-panic-accent/20"
+            >
+              <RefreshCw className="w-4 h-4 mr-1" />
+              {isPlaying ? "Restart" : "Start"}
+            </Button>
+          </div>
+
+          <div 
+            className="relative h-80 bg-gradient-to-b from-blue-900/30 to-purple-900/30 rounded-xl overflow-hidden"
+            style={{ touchAction: "none" }}
+          >
+            {!isPlaying && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center">
+                  <p className="text-4xl mb-2">🫧</p>
+                  <p className="text-panic-text/60 text-sm">Tap bubbles to pop them</p>
+                  <Button
+                    onClick={startGame}
+                    className="mt-3 bg-panic-accent hover:bg-panic-accent/80"
+                  >
+                    Start Popping
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {bubbles.map(bubble => (
+              <button
+                key={bubble.id}
+                onClick={() => popBubble(bubble.id)}
+                className={`absolute rounded-full transition-transform active:scale-75 ${bubble.color} 
+                  shadow-lg backdrop-blur-sm border border-white/30
+                  before:absolute before:inset-2 before:rounded-full before:bg-white/30 before:blur-sm`}
+                style={{
+                  left: `${bubble.x}%`,
+                  top: `${bubble.y}%`,
+                  width: bubble.size,
+                  height: bubble.size,
+                  transform: "translate(-50%, -50%)",
+                }}
+              />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <p className="text-center text-panic-text/60 text-sm">
+        Let your worries float away with each pop 🫧
+      </p>
+    </div>
+  );
+}
