@@ -1,1 +1,13 @@
 project_id = "lerfezrblapvktrbumhw"
+
+[functions.generate-tasks]
+verify_jwt = false
+
+[functions.panic-chat]
+verify_jwt = false
+
+[functions.journal-prompts]
+verify_jwt = false
+
+[functions.send-reminder]
+verify_jwt = false
