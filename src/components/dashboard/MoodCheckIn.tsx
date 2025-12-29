@@ -17,9 +17,11 @@ const MOODS = [
 
 interface MoodCheckInProps {
   onMoodLogged: () => void;
+  onStreakUpdate?: () => void;
+  onWeeklyUpdate?: () => void;
 }
 
-export default function MoodCheckIn({ onMoodLogged }: MoodCheckInProps) {
+export default function MoodCheckIn({ onMoodLogged, onStreakUpdate, onWeeklyUpdate }: MoodCheckInProps) {
   const [selectedMood, setSelectedMood] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
@@ -71,6 +73,10 @@ export default function MoodCheckIn({ onMoodLogged }: MoodCheckInProps) {
       setSelectedMood(null);
       setNotes("");
       onMoodLogged();
+      
+      // Trigger gamification updates
+      if (onStreakUpdate) onStreakUpdate();
+      if (onWeeklyUpdate) onWeeklyUpdate();
 
       toast({
         title: "Mood logged!",

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useGamification } from "@/hooks/useGamification";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +21,9 @@ import {
 } from "lucide-react";
 import MoodCheckIn from "@/components/dashboard/MoodCheckIn";
 import MoodChart from "@/components/dashboard/MoodChart";
+import StreakDisplay from "@/components/dashboard/StreakDisplay";
+import BadgesShowcase from "@/components/dashboard/BadgesShowcase";
+import WeeklyAchievementCard from "@/components/dashboard/WeeklyAchievementCard";
 
 interface Task {
   id: string;
@@ -35,6 +39,15 @@ export default function Dashboard() {
   const [generating, setGenerating] = useState(false);
   const [moodRefreshTrigger, setMoodRefreshTrigger] = useState(0);
   const { user, signOut } = useAuth();
+  const { 
+    streak, 
+    earnedBadges, 
+    weeklyAchievement, 
+    loading: gamificationLoading,
+    updateStreak,
+    updateWeeklyProgress,
+    checkTotalBadges,
+  } = useGamification();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -139,6 +152,12 @@ export default function Dashboard() {
             : t
         )
       );
+      
+      // Update weekly progress for gamification
+      if (!currentState) {
+        updateWeeklyProgress("task");
+        checkTotalBadges();
+      }
     }
   };
 
@@ -149,6 +168,15 @@ export default function Dashboard() {
 
   const handleMoodLogged = () => {
     setMoodRefreshTrigger((prev) => prev + 1);
+  };
+
+  const handleStreakUpdate = async () => {
+    await updateStreak();
+    await checkTotalBadges();
+  };
+
+  const handleWeeklyUpdate = () => {
+    updateWeeklyProgress("mood");
   };
 
   const completedCount = tasks.filter((t) => t.is_completed).length;
@@ -225,9 +253,32 @@ export default function Dashboard() {
           </p>
         </div>
 
+        {/* Gamification section */}
+        <div className="grid md:grid-cols-2 gap-4 mb-8">
+          <StreakDisplay 
+            currentStreak={streak.currentStreak} 
+            longestStreak={streak.longestStreak} 
+          />
+          <WeeklyAchievementCard
+            moodsLogged={weeklyAchievement.moodsLogged}
+            tasksCompleted={weeklyAchievement.tasksCompleted}
+            journalsWritten={weeklyAchievement.journalsWritten}
+            achievementUnlocked={weeklyAchievement.achievementUnlocked}
+          />
+        </div>
+
+        {/* Badges */}
+        <div className="mb-8">
+          <BadgesShowcase earnedBadges={earnedBadges} />
+        </div>
+
         {/* Mood section */}
         <div className="grid md:grid-cols-2 gap-4 mb-8">
-          <MoodCheckIn onMoodLogged={handleMoodLogged} />
+          <MoodCheckIn 
+            onMoodLogged={handleMoodLogged} 
+            onStreakUpdate={handleStreakUpdate}
+            onWeeklyUpdate={handleWeeklyUpdate}
+          />
           <MoodChart refreshTrigger={moodRefreshTrigger} />
         </div>
 
