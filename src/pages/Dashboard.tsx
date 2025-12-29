@@ -7,6 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { 
   AlertTriangle, 
@@ -18,6 +21,8 @@ import {
   Heart,
   BookOpen,
   Settings,
+  Plus,
+  X,
 } from "lucide-react";
 import MoodCheckIn from "@/components/dashboard/MoodCheckIn";
 import MoodChart from "@/components/dashboard/MoodChart";
@@ -38,6 +43,10 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [moodRefreshTrigger, setMoodRefreshTrigger] = useState(0);
+  const [showAddTask, setShowAddTask] = useState(false);
+  const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [newTaskDescription, setNewTaskDescription] = useState("");
+  const [addingTask, setAddingTask] = useState(false);
   const { user, signOut } = useAuth();
   const { 
     streak, 
@@ -175,6 +184,47 @@ export default function Dashboard() {
         checkTotalBadges();
       }
     }
+  };
+
+  const addCustomTask = async () => {
+    if (!user || !newTaskTitle.trim()) return;
+    
+    setAddingTask(true);
+    
+    const today = new Date();
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - today.getDay());
+    const weekStartDate = weekStart.toISOString().split("T")[0];
+
+    const { data, error } = await supabase
+      .from("weekly_tasks")
+      .insert({
+        user_id: user.id,
+        title: newTaskTitle.trim(),
+        description: newTaskDescription.trim() || "Custom task",
+        week_start: weekStartDate,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to add task.",
+        variant: "destructive",
+      });
+    } else if (data) {
+      setTasks((prev) => [...prev, data]);
+      setNewTaskTitle("");
+      setNewTaskDescription("");
+      setShowAddTask(false);
+      toast({
+        title: "Task added!",
+        description: "Your custom task has been added.",
+      });
+    }
+    
+    setAddingTask(false);
   };
 
   const handleSignOut = async () => {
@@ -340,11 +390,26 @@ export default function Dashboard() {
         </Card>
 
         {/* Tasks list */}
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        {loading || generating ? (
+          <div className="space-y-3">
+            <h3 className="font-display font-semibold text-lg mb-4">
+              {generating ? "Generating your personalized tasks..." : "Loading tasks..."}
+            </h3>
+            {[1, 2, 3, 4, 5].map((i) => (
+              <Card key={i} className="border-0 shadow-soft bg-card">
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-4">
+                    <Skeleton className="w-5 h-5 rounded mt-1" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-5 w-3/4" />
+                      <Skeleton className="h-4 w-full" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
-        ) : tasks.length === 0 ? (
+        ) : tasks.length === 0 && !showAddTask ? (
           <Card className="border-0 shadow-soft text-center py-12">
             <CardContent>
               <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -356,19 +421,84 @@ export default function Dashboard() {
               <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
                 Let's generate personalized tasks based on your anxiety profile and goals.
               </p>
-              <Button onClick={generateTasks} disabled={generating} className="gap-2">
-                {generating ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Sparkles className="w-4 h-4" />
-                )}
-                Generate My Tasks
-              </Button>
+              <div className="flex gap-3 justify-center">
+                <Button onClick={generateTasks} disabled={generating} className="gap-2">
+                  {generating ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="w-4 h-4" />
+                  )}
+                  Generate My Tasks
+                </Button>
+                <Button variant="outline" onClick={() => setShowAddTask(true)} className="gap-2">
+                  <Plus className="w-4 h-4" />
+                  Add Custom Task
+                </Button>
+              </div>
             </CardContent>
           </Card>
         ) : (
           <div className="space-y-3">
-            <h3 className="font-display font-semibold text-lg mb-4">Weekly Tasks</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-display font-semibold text-lg">Weekly Tasks</h3>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setShowAddTask(!showAddTask)}
+                className="gap-2"
+              >
+                {showAddTask ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                {showAddTask ? "Cancel" : "Add Task"}
+              </Button>
+            </div>
+
+            {/* Add custom task form */}
+            {showAddTask && (
+              <Card className="border-0 shadow-soft bg-primary/5 animate-fade-in">
+                <CardContent className="p-4 space-y-3">
+                  <Input
+                    placeholder="Task title (e.g., Practice deep breathing)"
+                    value={newTaskTitle}
+                    onChange={(e) => setNewTaskTitle(e.target.value)}
+                    className="bg-background"
+                  />
+                  <Textarea
+                    placeholder="Description (optional)"
+                    value={newTaskDescription}
+                    onChange={(e) => setNewTaskDescription(e.target.value)}
+                    className="bg-background resize-none"
+                    rows={2}
+                  />
+                  <div className="flex gap-2 justify-end">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setShowAddTask(false);
+                        setNewTaskTitle("");
+                        setNewTaskDescription("");
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={addCustomTask}
+                      disabled={!newTaskTitle.trim() || addingTask}
+                      className="gap-2"
+                    >
+                      {addingTask ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Plus className="w-4 h-4" />
+                      )}
+                      Add Task
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {tasks.map((task, index) => (
               <Card
                 key={task.id}
