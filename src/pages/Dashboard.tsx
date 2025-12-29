@@ -12,11 +12,11 @@ import {
   RefreshCw, 
   Loader2, 
   CheckCircle2, 
-  LogOut,
   Sparkles,
   Calendar,
   Heart,
   BookOpen,
+  Settings,
 } from "lucide-react";
 import MoodCheckIn from "@/components/dashboard/MoodCheckIn";
 import MoodChart from "@/components/dashboard/MoodChart";
@@ -194,6 +194,13 @@ export default function Dashboard() {
               Journal
             </Button>
             <Button
+              variant="outline"
+              size="icon"
+              onClick={() => navigate("/settings")}
+            >
+              <Settings className="w-4 h-4" />
+            </Button>
+            <Button
               variant="destructive"
               size="lg"
               className="gap-2 shadow-lg"
@@ -201,9 +208,6 @@ export default function Dashboard() {
             >
               <AlertTriangle className="w-4 h-4" />
               Panic Mode
-            </Button>
-            <Button variant="ghost" size="icon" onClick={handleSignOut}>
-              <LogOut className="w-4 h-4" />
             </Button>
           </div>
         </div>
