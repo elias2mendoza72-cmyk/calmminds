@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
@@ -18,6 +18,8 @@ import {
   Heart,
   BookOpen,
 } from "lucide-react";
+import MoodCheckIn from "@/components/dashboard/MoodCheckIn";
+import MoodChart from "@/components/dashboard/MoodChart";
 
 interface Task {
   id: string;
@@ -31,6 +33,7 @@ export default function Dashboard() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [moodRefreshTrigger, setMoodRefreshTrigger] = useState(0);
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -144,6 +147,10 @@ export default function Dashboard() {
     navigate("/auth");
   };
 
+  const handleMoodLogged = () => {
+    setMoodRefreshTrigger((prev) => prev + 1);
+  };
+
   const completedCount = tasks.filter((t) => t.is_completed).length;
   const progress = tasks.length > 0 ? (completedCount / tasks.length) * 100 : 0;
 
@@ -212,6 +219,12 @@ export default function Dashboard() {
           <p className="text-muted-foreground">
             Here are your personalized habits for this week.
           </p>
+        </div>
+
+        {/* Mood section */}
+        <div className="grid md:grid-cols-2 gap-4 mb-8">
+          <MoodCheckIn onMoodLogged={handleMoodLogged} />
+          <MoodChart refreshTrigger={moodRefreshTrigger} />
         </div>
 
         {/* Week progress card */}
@@ -284,6 +297,7 @@ export default function Dashboard() {
           </Card>
         ) : (
           <div className="space-y-3">
+            <h3 className="font-display font-semibold text-lg mb-4">Weekly Tasks</h3>
             {tasks.map((task, index) => (
               <Card
                 key={task.id}
