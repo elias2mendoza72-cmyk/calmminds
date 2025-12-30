@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useGamification } from "@/hooks/useGamification";
@@ -29,6 +29,7 @@ import MoodChart from "@/components/dashboard/MoodChart";
 import StreakDisplay from "@/components/dashboard/StreakDisplay";
 import BadgesShowcase from "@/components/dashboard/BadgesShowcase";
 import WeeklyAchievementCard from "@/components/dashboard/WeeklyAchievementCard";
+import CelebrationEffects from "@/components/CelebrationEffects";
 
 interface Task {
   id: string;
@@ -47,6 +48,8 @@ export default function Dashboard() {
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskDescription, setNewTaskDescription] = useState("");
   const [addingTask, setAddingTask] = useState(false);
+  const [celebratingTaskId, setCelebratingTaskId] = useState<string | null>(null);
+  const [fadingOutTaskIds, setFadingOutTaskIds] = useState<Set<string>>(new Set());
   const { user, signOut } = useAuth();
   const { 
     streak, 
@@ -155,6 +158,16 @@ export default function Dashboard() {
   };
 
   const toggleTask = async (taskId: string, currentState: boolean) => {
+    // If completing a task, trigger celebration
+    if (!currentState) {
+      setCelebratingTaskId(taskId);
+      
+      // Haptic feedback
+      if (navigator.vibrate) {
+        navigator.vibrate([50, 30, 50]);
+      }
+    }
+
     const { error } = await supabase
       .from("weekly_tasks")
       .update({
@@ -169,7 +182,9 @@ export default function Dashboard() {
         description: "Failed to update task.",
         variant: "destructive",
       });
+      setCelebratingTaskId(null);
     } else {
+      // Update the task state immediately
       setTasks((prev) =>
         prev.map((t) =>
           t.id === taskId
@@ -182,9 +197,28 @@ export default function Dashboard() {
       if (!currentState) {
         updateWeeklyProgress("task");
         checkTotalBadges();
+        
+        // After celebration, fade out and remove the task from view
+        setTimeout(() => {
+          setFadingOutTaskIds(prev => new Set(prev).add(taskId));
+          
+          // Remove from list after fade animation
+          setTimeout(() => {
+            setTasks(prev => prev.filter(t => t.id !== taskId));
+            setFadingOutTaskIds(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(taskId);
+              return newSet;
+            });
+          }, 400);
+        }, 1200);
       }
     }
   };
+
+  const handleCelebrationComplete = useCallback(() => {
+    setCelebratingTaskId(null);
+  }, []);
 
   const addCustomTask = async () => {
     if (!user || !newTaskTitle.trim()) return;
@@ -245,8 +279,11 @@ export default function Dashboard() {
     updateWeeklyProgress("mood");
   };
 
+  // Count includes tasks that are fading out
+  const visibleTasks = tasks.filter(t => !t.is_completed || fadingOutTaskIds.has(t.id));
   const completedCount = tasks.filter((t) => t.is_completed).length;
-  const progress = tasks.length > 0 ? (completedCount / tasks.length) * 100 : 0;
+  const totalTasksForProgress = tasks.length + fadingOutTaskIds.size;
+  const progress = totalTasksForProgress > 0 ? (completedCount / totalTasksForProgress) * 100 : 0;
 
   const getWeekDateRange = () => {
     const today = new Date();
@@ -261,6 +298,14 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Celebration effects for task completion */}
+      <CelebrationEffects
+        trigger={celebratingTaskId !== null}
+        type="confetti"
+        duration={1500}
+        onComplete={handleCelebrationComplete}
+      />
+
       {/* Background decorations */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 right-0 w-96 h-96 bg-calm-peach rounded-full opacity-20 blur-3xl" />
@@ -499,40 +544,64 @@ export default function Dashboard() {
               </Card>
             )}
 
-            {tasks.map((task, index) => (
-              <Card
-                key={task.id}
-                className={`border-0 shadow-soft transition-all duration-300 animate-fade-in ${
-                  task.is_completed ? "bg-secondary/50" : "bg-card"
-                }`}
-                style={{ animationDelay: `${index * 50}ms` }}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-4">
-                    <Checkbox
-                      checked={task.is_completed}
-                      onCheckedChange={() => toggleTask(task.id, task.is_completed)}
-                      className="mt-1"
-                    />
-                    <div className="flex-1">
-                      <h4
-                        className={`font-medium ${
-                          task.is_completed ? "line-through text-muted-foreground" : ""
-                        }`}
-                      >
-                        {task.title}
-                      </h4>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {task.description}
-                      </p>
-                    </div>
-                    {task.is_completed && (
-                      <CheckCircle2 className="w-5 h-5 text-calm-forest flex-shrink-0" />
+            {tasks
+              .filter(task => !task.is_completed || fadingOutTaskIds.has(task.id))
+              .map((task, index) => {
+                const isFadingOut = fadingOutTaskIds.has(task.id);
+                const isCelebrating = celebratingTaskId === task.id;
+                
+                return (
+                  <Card
+                    key={task.id}
+                    className={`border-0 shadow-soft transition-all duration-300 animate-fade-in relative overflow-hidden ${
+                      isFadingOut 
+                        ? "opacity-0 scale-95 -translate-x-4" 
+                        : isCelebrating
+                        ? "bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 ring-2 ring-green-500/50 scale-[1.02]"
+                        : task.is_completed 
+                        ? "bg-secondary/50" 
+                        : "bg-card hover:shadow-md"
+                    }`}
+                    style={{ 
+                      animationDelay: `${index * 50}ms`,
+                      transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)"
+                    }}
+                  >
+                    {isCelebrating && (
+                      <div className="absolute inset-0 bg-gradient-to-r from-green-400/10 to-emerald-400/10 animate-pulse" />
                     )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    <CardContent className="p-4 relative">
+                      <div className="flex items-start gap-4">
+                        <Checkbox
+                          checked={task.is_completed}
+                          onCheckedChange={() => toggleTask(task.id, task.is_completed)}
+                          disabled={isFadingOut || isCelebrating}
+                          className={`mt-1 transition-transform ${isCelebrating ? "scale-110" : ""}`}
+                          aria-label={`Mark "${task.title}" as ${task.is_completed ? "incomplete" : "complete"}`}
+                        />
+                        <div className="flex-1">
+                          <h4
+                            className={`font-medium transition-all ${
+                              task.is_completed ? "line-through text-muted-foreground" : ""
+                            }`}
+                          >
+                            {task.title}
+                          </h4>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {task.description}
+                          </p>
+                        </div>
+                        {isCelebrating && (
+                          <div className="flex items-center gap-1 text-green-600 dark:text-green-400 animate-bounce-in">
+                            <CheckCircle2 className="w-5 h-5" />
+                            <span className="text-sm font-medium">Done!</span>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
           </div>
         )}
       </main>
