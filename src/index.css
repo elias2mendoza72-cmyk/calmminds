@@ -212,7 +212,17 @@
     .animate-glow-pulse {
       animation: none !important;
       transition: none !important;
-    }
+}
+
+/* Subtle bounce animation for mood selection */
+@keyframes bounce-subtle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.animate-bounce-subtle {
+  animation: bounce-subtle 0.4s ease-in-out;
+}
   }
 }
 
