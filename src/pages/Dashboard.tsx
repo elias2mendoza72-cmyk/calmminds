@@ -519,27 +519,67 @@ export default function Dashboard() {
         <section className="animate-fade-in-up" style={{ animationDelay: '300ms' }}>
           {loading || generating ? (
             <div className="space-y-4">
+              {/* Header skeleton */}
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-muted/50 flex items-center justify-center">
-                  <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center overflow-hidden">
+                  <Sparkles className="w-5 h-5 text-primary animate-pulse" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full animate-[shimmer_1.5s_infinite]" />
                 </div>
-                <h3 className="font-display font-semibold text-xl">
-                  {generating ? "Generating your tasks..." : "Loading..."}
-                </h3>
+                <div className="space-y-2">
+                  <h3 className="font-display font-semibold text-xl">
+                    {generating ? "Creating your personalized tasks..." : "Loading your tasks..."}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {generating ? "AI is analyzing your profile" : "Please wait a moment"}
+                  </p>
+                </div>
               </div>
+
+              {/* Enhanced skeleton cards with shimmer */}
               {[1, 2, 3].map((i) => (
-                <Card key={i} className="border-0 shadow-soft bg-card/80">
-                  <CardContent className="p-5">
+                <Card 
+                  key={i} 
+                  className="border border-border/30 shadow-soft bg-card/80 overflow-hidden"
+                  style={{ animationDelay: `${i * 100}ms` }}
+                >
+                  <CardContent className="p-5 relative">
+                    {/* Shimmer overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" style={{ animationDelay: `${i * 200}ms` }} />
+                    
                     <div className="flex items-start gap-4">
-                      <Skeleton className="w-6 h-6 rounded-lg" />
-                      <div className="flex-1 space-y-2">
-                        <Skeleton className="h-5 w-3/4" />
-                        <Skeleton className="h-4 w-full" />
+                      {/* Checkbox skeleton with pulse */}
+                      <div className="relative">
+                        <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-muted to-muted/50 animate-pulse" />
+                        <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-[shimmer_1.5s_infinite]" style={{ animationDelay: `${i * 150}ms` }} />
+                      </div>
+                      
+                      <div className="flex-1 space-y-3">
+                        {/* Title skeleton */}
+                        <div className="relative h-5 rounded-md bg-gradient-to-r from-muted via-muted/80 to-muted overflow-hidden" style={{ width: `${70 + i * 8}%` }}>
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-[shimmer_1.8s_infinite]" style={{ animationDelay: `${i * 100}ms` }} />
+                        </div>
+                        
+                        {/* Description skeleton */}
+                        <div className="space-y-2">
+                          <div className="relative h-4 rounded-md bg-gradient-to-r from-muted/70 via-muted/50 to-muted/70 overflow-hidden">
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" style={{ animationDelay: `${i * 120}ms` }} />
+                          </div>
+                          <div className="relative h-4 rounded-md bg-gradient-to-r from-muted/50 via-muted/30 to-muted/50 overflow-hidden" style={{ width: '60%' }}>
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" style={{ animationDelay: `${i * 140}ms` }} />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
               ))}
+
+              {/* Loading indicator dots */}
+              <div className="flex items-center justify-center gap-1.5 pt-4">
+                <div className="w-2 h-2 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: '0ms' }} />
+                <div className="w-2 h-2 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: '150ms' }} />
+                <div className="w-2 h-2 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
             </div>
           ) : tasks.length === 0 && !showAddTask ? (
             <Card className="border-0 shadow-elevated text-center py-16 bg-gradient-premium from-card via-card to-calm-cream/20 overflow-hidden relative">

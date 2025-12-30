@@ -146,6 +146,11 @@ Example format:
     let tasks;
     try {
       tasks = JSON.parse(content);
+      // Enforce maximum of 3 tasks
+      if (Array.isArray(tasks) && tasks.length > 3) {
+        console.log(`AI generated ${tasks.length} tasks, limiting to 3`);
+        tasks = tasks.slice(0, 3);
+      }
     } catch (e) {
       console.error("Failed to parse AI response:", content);
       throw new Error("Invalid AI response format");
