@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useGamification } from "@/hooks/useGamification";
@@ -52,6 +52,9 @@ export default function Dashboard() {
   const [addingTask, setAddingTask] = useState(false);
   const [celebratingTaskId, setCelebratingTaskId] = useState<string | null>(null);
   const [fadingOutTaskIds, setFadingOutTaskIds] = useState<Set<string>>(new Set());
+  const [scrollY, setScrollY] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+  
   const { user, signOut } = useAuth();
   const { 
     streak, 
@@ -64,6 +67,15 @@ export default function Dashboard() {
   } = useGamification();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Parallax scroll effect
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrollY(window.scrollY);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -294,7 +306,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-background relative">
+    <div ref={containerRef} className="min-h-screen bg-background relative">
       {/* Celebration effects */}
       <CelebrationEffects
         trigger={celebratingTaskId !== null}
@@ -303,17 +315,35 @@ export default function Dashboard() {
         onComplete={handleCelebrationComplete}
       />
 
-      {/* Premium background with gradient orbs */}
+      {/* Premium background with parallax gradient orbs */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-24 -right-24 w-[500px] h-[500px] rounded-full bg-gradient-radial from-calm-peach/40 via-calm-peach/10 to-transparent blur-3xl" />
-        <div className="absolute top-1/3 -left-32 w-[400px] h-[400px] rounded-full bg-gradient-radial from-calm-sage/30 via-calm-sage/5 to-transparent blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-[600px] h-[400px] rounded-full bg-gradient-radial from-calm-lavender/20 via-transparent to-transparent blur-3xl" />
-        {/* Subtle grid pattern */}
+        {/* Primary peach orb - moves slower */}
         <div 
-          className="absolute inset-0 opacity-[0.015]"
+          className="absolute -top-24 -right-24 w-[500px] h-[500px] rounded-full bg-gradient-radial from-calm-peach/40 via-calm-peach/10 to-transparent blur-3xl transition-transform duration-75 ease-out will-change-transform"
+          style={{ transform: `translate3d(${scrollY * 0.02}px, ${scrollY * 0.05}px, 0)` }}
+        />
+        {/* Sage orb - moves at medium speed */}
+        <div 
+          className="absolute top-1/3 -left-32 w-[400px] h-[400px] rounded-full bg-gradient-radial from-calm-sage/30 via-calm-sage/5 to-transparent blur-3xl transition-transform duration-75 ease-out will-change-transform"
+          style={{ transform: `translate3d(${scrollY * -0.03}px, ${scrollY * 0.08}px, 0)` }}
+        />
+        {/* Lavender orb - moves faster for depth */}
+        <div 
+          className="absolute bottom-0 right-1/4 w-[600px] h-[400px] rounded-full bg-gradient-radial from-calm-lavender/20 via-transparent to-transparent blur-3xl transition-transform duration-75 ease-out will-change-transform"
+          style={{ transform: `translate3d(${scrollY * 0.04}px, ${scrollY * -0.1}px, 0)` }}
+        />
+        {/* Small accent orb - moves fastest */}
+        <div 
+          className="absolute top-1/2 right-1/3 w-[200px] h-[200px] rounded-full bg-gradient-radial from-primary/10 via-transparent to-transparent blur-2xl transition-transform duration-75 ease-out will-change-transform"
+          style={{ transform: `translate3d(${scrollY * -0.06}px, ${scrollY * 0.12}px, 0)` }}
+        />
+        {/* Subtle grid pattern with parallax */}
+        <div 
+          className="absolute inset-0 opacity-[0.015] transition-transform duration-75 ease-out"
           style={{
             backgroundImage: `linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)`,
             backgroundSize: '60px 60px',
+            transform: `translate3d(0, ${scrollY * 0.02}px, 0)`,
           }}
         />
       </div>
