@@ -74,7 +74,7 @@ serve(async (req) => {
     const systemPrompt = `You are a compassionate wellness coach specializing in anxiety management. Your role is to generate personalized, actionable weekly habit tasks that help people manage their anxiety.
 
 Guidelines:
-- Create 5-7 practical, achievable tasks for the week
+- Create exactly 3 practical, achievable tasks for the week
 - Tasks should be specific and measurable
 - Mix different types: physical, mental, social, and self-care activities
 - Consider the user's current lifestyle and support systems
