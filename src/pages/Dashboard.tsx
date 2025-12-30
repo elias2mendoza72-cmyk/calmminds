@@ -23,6 +23,8 @@ import {
   Settings,
   Plus,
   X,
+  Target,
+  Zap,
 } from "lucide-react";
 import MoodCheckIn from "@/components/dashboard/MoodCheckIn";
 import MoodChart from "@/components/dashboard/MoodChart";
@@ -72,7 +74,6 @@ export default function Dashboard() {
   const checkOnboardingAndLoadTasks = async () => {
     if (!user) return;
 
-    // Check if onboarding is complete
     const { data: profile } = await supabase
       .from("profiles")
       .select("onboarding_completed")
@@ -91,9 +92,8 @@ export default function Dashboard() {
     if (!user) return;
     setLoading(true);
 
-    // Get the start of the current week (Sunday)
     const today = new Date();
-    const dayOfWeek = today.getUTCDay(); // 0 = Sunday
+    const dayOfWeek = today.getUTCDay();
     const weekStart = new Date(today);
     weekStart.setUTCDate(today.getUTCDate() - dayOfWeek);
     weekStart.setUTCHours(0, 0, 0, 0);
@@ -104,7 +104,7 @@ export default function Dashboard() {
       .select("*")
       .eq("user_id", user.id)
       .gte("week_start", weekStartStr)
-      .eq("is_completed", false) // Only fetch incomplete tasks
+      .eq("is_completed", false)
       .order("created_at", { ascending: true });
 
     if (error) {
@@ -163,11 +163,8 @@ export default function Dashboard() {
   };
 
   const toggleTask = async (taskId: string, currentState: boolean) => {
-    // If completing a task, trigger celebration
     if (!currentState) {
       setCelebratingTaskId(taskId);
-      
-      // Haptic feedback
       if (navigator.vibrate) {
         navigator.vibrate([50, 30, 50]);
       }
@@ -189,7 +186,6 @@ export default function Dashboard() {
       });
       setCelebratingTaskId(null);
     } else {
-      // Update the task state immediately
       setTasks((prev) =>
         prev.map((t) =>
           t.id === taskId
@@ -198,16 +194,13 @@ export default function Dashboard() {
         )
       );
       
-      // Update weekly progress for gamification
       if (!currentState) {
         updateWeeklyProgress("task");
         checkTotalBadges();
         
-        // After celebration, fade out and remove the task from view
         setTimeout(() => {
           setFadingOutTaskIds(prev => new Set(prev).add(taskId));
           
-          // Remove from list after fade animation
           setTimeout(() => {
             setTasks(prev => prev.filter(t => t.id !== taskId));
             setFadingOutTaskIds(prev => {
@@ -284,7 +277,6 @@ export default function Dashboard() {
     updateWeeklyProgress("mood");
   };
 
-  // Count includes tasks that are fading out
   const visibleTasks = tasks.filter(t => !t.is_completed || fadingOutTaskIds.has(t.id));
   const completedCount = tasks.filter((t) => t.is_completed).length;
   const totalTasksForProgress = tasks.length + fadingOutTaskIds.size;
@@ -302,8 +294,8 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Celebration effects for task completion */}
+    <div className="min-h-screen bg-background relative">
+      {/* Celebration effects */}
       <CelebrationEffects
         trigger={celebratingTaskId !== null}
         type="confetti"
@@ -311,305 +303,396 @@ export default function Dashboard() {
         onComplete={handleCelebrationComplete}
       />
 
-      {/* Background decorations */}
+      {/* Premium background with gradient orbs */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-calm-peach rounded-full opacity-20 blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-80 h-80 bg-calm-sage rounded-full opacity-20 blur-3xl" />
+        <div className="absolute -top-24 -right-24 w-[500px] h-[500px] rounded-full bg-gradient-radial from-calm-peach/40 via-calm-peach/10 to-transparent blur-3xl" />
+        <div className="absolute top-1/3 -left-32 w-[400px] h-[400px] rounded-full bg-gradient-radial from-calm-sage/30 via-calm-sage/5 to-transparent blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-[600px] h-[400px] rounded-full bg-gradient-radial from-calm-lavender/20 via-transparent to-transparent blur-3xl" />
+        {/* Subtle grid pattern */}
+        <div 
+          className="absolute inset-0 opacity-[0.015]"
+          style={{
+            backgroundImage: `linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)`,
+            backgroundSize: '60px 60px',
+          }}
+        />
       </div>
 
-      {/* Header */}
-      <header className="relative z-10 border-b border-border/50 bg-card/50 backdrop-blur-sm">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-              <Heart className="w-5 h-5 text-primary" />
+      {/* Premium Header */}
+      <header className="relative z-10 border-b border-border/40 bg-card/60 backdrop-blur-xl">
+        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="relative group">
+              <div className="absolute -inset-1 bg-gradient-premium from-primary/40 via-calm-rose/30 to-calm-gold/40 rounded-2xl blur-md opacity-60 group-hover:opacity-100 transition-opacity" />
+              <div className="relative w-12 h-12 bg-gradient-premium from-primary to-calm-terracotta rounded-xl flex items-center justify-center shadow-elevated">
+                <Heart className="w-6 h-6 text-primary-foreground" />
+              </div>
             </div>
-            <h1 className="text-xl font-display font-semibold">CalmMind</h1>
+            <div>
+              <h1 className="text-xl font-display font-bold tracking-tight">CalmMind</h1>
+              <p className="text-xs text-muted-foreground font-medium">Your wellness companion</p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <nav className="flex items-center gap-2">
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
-              className="gap-2"
+              className="gap-2 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
               onClick={() => navigate("/journal")}
             >
               <BookOpen className="w-4 h-4" />
-              Journal
+              <span className="hidden sm:inline">Journal</span>
             </Button>
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
+              className="text-muted-foreground hover:text-foreground hover:bg-muted/50"
               onClick={() => navigate("/settings")}
             >
               <Settings className="w-4 h-4" />
             </Button>
             <Button
-              variant="destructive"
-              size="lg"
-              className="gap-2 shadow-lg"
+              size="sm"
+              className="gap-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-lg shadow-destructive/25 btn-premium"
               onClick={() => navigate("/panic")}
             >
               <AlertTriangle className="w-4 h-4" />
-              Panic Mode
+              <span className="hidden sm:inline">Panic Mode</span>
             </Button>
-          </div>
+          </nav>
         </div>
       </header>
 
-      {/* Main content */}
-      <main className="relative z-10 max-w-4xl mx-auto px-4 py-8">
-        {/* Welcome section */}
-        <div className="mb-8">
-          <h2 className="text-3xl font-display font-semibold mb-2">
-            Welcome back! 👋
-          </h2>
-          <p className="text-muted-foreground">
-            Here are your personalized habits for this week.
-          </p>
-        </div>
-
-        {/* Gamification section */}
-        <div className="grid md:grid-cols-2 gap-4 mb-8">
-          <StreakDisplay 
-            currentStreak={streak.currentStreak} 
-            longestStreak={streak.longestStreak} 
-          />
-          <WeeklyAchievementCard
-            moodsLogged={weeklyAchievement.moodsLogged}
-            tasksCompleted={weeklyAchievement.tasksCompleted}
-            journalsWritten={weeklyAchievement.journalsWritten}
-            achievementUnlocked={weeklyAchievement.achievementUnlocked}
-          />
-        </div>
-
-        {/* Badges */}
-        <div className="mb-8">
-          <BadgesShowcase earnedBadges={earnedBadges} />
-        </div>
-
-        {/* Mood section */}
-        <div className="grid md:grid-cols-2 gap-4 mb-8">
-          <MoodCheckIn 
-            onMoodLogged={handleMoodLogged} 
-            onStreakUpdate={handleStreakUpdate}
-            onWeeklyUpdate={handleWeeklyUpdate}
-          />
-          <MoodChart refreshTrigger={moodRefreshTrigger} />
-        </div>
-
-        {/* Week progress card */}
-        <Card className="mb-8 border-0 shadow-warm bg-gradient-to-br from-card to-calm-cream/30">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Calendar className="w-4 h-4" />
-                <span className="text-sm">{getWeekDateRange()}</span>
+      {/* Main Content */}
+      <main className="relative z-10 max-w-5xl mx-auto px-6 py-10">
+        {/* Hero Welcome Section */}
+        <section className="mb-12 animate-fade-in-up">
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
+                  <Zap className="w-3 h-3" />
+                  This Week
+                </span>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={generateTasks}
-                disabled={generating}
-                className="gap-2"
-              >
-                {generating ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="w-4 h-4" />
-                )}
-                {tasks.length === 0 ? "Generate Tasks" : "Regenerate"}
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between mb-2">
-              <span className="font-medium">Weekly Progress</span>
-              <span className="text-sm text-muted-foreground">
-                {completedCount} of {tasks.length} completed
-              </span>
-            </div>
-            <Progress value={progress} className="h-3" />
-            {progress === 100 && tasks.length > 0 && (
-              <p className="text-sm text-calm-forest mt-2 flex items-center gap-1">
-                <CheckCircle2 className="w-4 h-4" />
-                Amazing work! You've completed all your tasks this week!
+              <h2 className="text-4xl sm:text-5xl font-display font-bold tracking-tight mb-3">
+                Welcome back
+              </h2>
+              <p className="text-lg text-muted-foreground max-w-md">
+                Here are your personalized habits designed to help you feel your best.
               </p>
-            )}
-          </CardContent>
-        </Card>
+            </div>
+          </div>
+        </section>
 
-        {/* Tasks list */}
-        {loading || generating ? (
-          <div className="space-y-3">
-            <h3 className="font-display font-semibold text-lg mb-4">
-              {generating ? "Generating your personalized tasks..." : "Loading tasks..."}
-            </h3>
-            {[1, 2, 3, 4, 5].map((i) => (
-              <Card key={i} className="border-0 shadow-soft bg-card">
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-4">
-                    <Skeleton className="w-5 h-5 rounded mt-1" />
-                    <div className="flex-1 space-y-2">
-                      <Skeleton className="h-5 w-3/4" />
-                      <Skeleton className="h-4 w-full" />
+        {/* Stats Grid */}
+        <section className="grid sm:grid-cols-2 gap-5 mb-10 stagger-children">
+          <div className="premium-card floating-element">
+            <StreakDisplay 
+              currentStreak={streak.currentStreak} 
+              longestStreak={streak.longestStreak} 
+            />
+          </div>
+          <div className="premium-card floating-element">
+            <WeeklyAchievementCard
+              moodsLogged={weeklyAchievement.moodsLogged}
+              tasksCompleted={weeklyAchievement.tasksCompleted}
+              journalsWritten={weeklyAchievement.journalsWritten}
+              achievementUnlocked={weeklyAchievement.achievementUnlocked}
+            />
+          </div>
+        </section>
+
+        {/* Badges Section */}
+        <section className="mb-10 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
+          <div className="premium-card p-1">
+            <BadgesShowcase earnedBadges={earnedBadges} />
+          </div>
+        </section>
+
+        {/* Mood Section */}
+        <section className="grid sm:grid-cols-2 gap-5 mb-10">
+          <div className="premium-card animate-fade-in-up" style={{ animationDelay: '150ms' }}>
+            <MoodCheckIn 
+              onMoodLogged={handleMoodLogged} 
+              onStreakUpdate={handleStreakUpdate}
+              onWeeklyUpdate={handleWeeklyUpdate}
+            />
+          </div>
+          <div className="premium-card animate-fade-in-up" style={{ animationDelay: '200ms' }}>
+            <MoodChart refreshTrigger={moodRefreshTrigger} />
+          </div>
+        </section>
+
+        {/* Weekly Progress Card */}
+        <section className="mb-10 animate-fade-in-up" style={{ animationDelay: '250ms' }}>
+          <Card className="border-0 shadow-elevated bg-gradient-premium from-card via-card to-calm-cream/20 overflow-hidden relative">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-radial from-primary/5 to-transparent" />
+            <CardHeader className="pb-3 relative">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <Target className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg font-semibold">Weekly Progress</CardTitle>
+                    <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                      <Calendar className="w-3.5 h-3.5" />
+                      <span>{getWeekDateRange()}</span>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : tasks.length === 0 && !showAddTask ? (
-          <Card className="border-0 shadow-soft text-center py-12">
-            <CardContent>
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Sparkles className="w-8 h-8 text-primary" />
-              </div>
-              <h3 className="text-xl font-display font-semibold mb-2">
-                Ready to start your week?
-              </h3>
-              <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
-                Let's generate personalized tasks based on your anxiety profile and goals.
-              </p>
-              <div className="flex gap-3 justify-center">
-                <Button onClick={generateTasks} disabled={generating} className="gap-2">
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={generateTasks}
+                  disabled={generating}
+                  className="gap-2 border-border/60 hover:bg-muted/50 hover:border-primary/30 transition-all"
+                >
                   {generating ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
-                    <Sparkles className="w-4 h-4" />
+                    <RefreshCw className="w-4 h-4" />
                   )}
-                  Generate My Tasks
-                </Button>
-                <Button variant="outline" onClick={() => setShowAddTask(true)} className="gap-2">
-                  <Plus className="w-4 h-4" />
-                  Add Custom Task
+                  {tasks.length === 0 ? "Generate" : "Refresh"}
                 </Button>
               </div>
+            </CardHeader>
+            <CardContent className="relative">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm text-muted-foreground font-medium">
+                  {completedCount} of {tasks.length} tasks completed
+                </span>
+                <span className="text-sm font-semibold text-primary">
+                  {tasks.length > 0 ? Math.round(progress) : 0}%
+                </span>
+              </div>
+              <div className="relative">
+                <Progress value={progress} className="h-3 bg-muted/50" />
+                <div 
+                  className="absolute top-0 left-0 h-3 rounded-full bg-gradient-premium from-primary via-calm-terracotta to-calm-rose transition-all duration-500"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              {progress === 100 && tasks.length > 0 && (
+                <div className="mt-4 flex items-center gap-2 text-calm-forest bg-calm-sage/20 px-4 py-2.5 rounded-xl">
+                  <CheckCircle2 className="w-5 h-5" />
+                  <span className="text-sm font-medium">Amazing! You've completed all your tasks this week!</span>
+                </div>
+              )}
             </CardContent>
           </Card>
-        ) : (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-display font-semibold text-lg">Weekly Tasks</h3>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setShowAddTask(!showAddTask)}
-                className="gap-2"
-              >
-                {showAddTask ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-                {showAddTask ? "Cancel" : "Add Task"}
-              </Button>
-            </div>
+        </section>
 
-            {/* Add custom task form */}
-            {showAddTask && (
-              <Card className="border-0 shadow-soft bg-primary/5 animate-fade-in">
-                <CardContent className="p-4 space-y-3">
-                  <Input
-                    placeholder="Task title (e.g., Practice deep breathing)"
-                    value={newTaskTitle}
-                    onChange={(e) => setNewTaskTitle(e.target.value)}
-                    className="bg-background"
-                  />
-                  <Textarea
-                    placeholder="Description (optional)"
-                    value={newTaskDescription}
-                    onChange={(e) => setNewTaskDescription(e.target.value)}
-                    className="bg-background resize-none"
-                    rows={2}
-                  />
-                  <div className="flex gap-2 justify-end">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setShowAddTask(false);
-                        setNewTaskTitle("");
-                        setNewTaskDescription("");
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={addCustomTask}
-                      disabled={!newTaskTitle.trim() || addingTask}
-                      className="gap-2"
-                    >
-                      {addingTask ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Plus className="w-4 h-4" />
-                      )}
-                      Add Task
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {tasks
-              .filter(task => !task.is_completed || fadingOutTaskIds.has(task.id))
-              .map((task, index) => {
-                const isFadingOut = fadingOutTaskIds.has(task.id);
-                const isCelebrating = celebratingTaskId === task.id;
-                
-                return (
-                  <Card
-                    key={task.id}
-                    className={`border-0 shadow-soft transition-all duration-300 animate-fade-in relative overflow-hidden ${
-                      isFadingOut 
-                        ? "opacity-0 scale-95 -translate-x-4" 
-                        : isCelebrating
-                        ? "bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 ring-2 ring-green-500/50 scale-[1.02]"
-                        : task.is_completed 
-                        ? "bg-secondary/50" 
-                        : "bg-card hover:shadow-md"
-                    }`}
-                    style={{ 
-                      animationDelay: `${index * 50}ms`,
-                      transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)"
-                    }}
-                  >
-                    {isCelebrating && (
-                      <div className="absolute inset-0 bg-gradient-to-r from-green-400/10 to-emerald-400/10 animate-pulse" />
-                    )}
-                    <CardContent className="p-4 relative">
-                      <div className="flex items-start gap-4">
-                        <Checkbox
-                          checked={task.is_completed}
-                          onCheckedChange={() => toggleTask(task.id, task.is_completed)}
-                          disabled={isFadingOut || isCelebrating}
-                          className={`mt-1 transition-transform ${isCelebrating ? "scale-110" : ""}`}
-                          aria-label={`Mark "${task.title}" as ${task.is_completed ? "incomplete" : "complete"}`}
-                        />
-                        <div className="flex-1">
-                          <h4
-                            className={`font-medium transition-all ${
-                              task.is_completed ? "line-through text-muted-foreground" : ""
-                            }`}
-                          >
-                            {task.title}
-                          </h4>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {task.description}
-                          </p>
-                        </div>
-                        {isCelebrating && (
-                          <div className="flex items-center gap-1 text-green-600 dark:text-green-400 animate-bounce-in">
-                            <CheckCircle2 className="w-5 h-5" />
-                            <span className="text-sm font-medium">Done!</span>
-                          </div>
-                        )}
+        {/* Tasks Section */}
+        <section className="animate-fade-in-up" style={{ animationDelay: '300ms' }}>
+          {loading || generating ? (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-xl bg-muted/50 flex items-center justify-center">
+                  <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                </div>
+                <h3 className="font-display font-semibold text-xl">
+                  {generating ? "Generating your tasks..." : "Loading..."}
+                </h3>
+              </div>
+              {[1, 2, 3].map((i) => (
+                <Card key={i} className="border-0 shadow-soft bg-card/80">
+                  <CardContent className="p-5">
+                    <div className="flex items-start gap-4">
+                      <Skeleton className="w-6 h-6 rounded-lg" />
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-5 w-3/4" />
+                        <Skeleton className="h-4 w-full" />
                       </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-          </div>
-        )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : tasks.length === 0 && !showAddTask ? (
+            <Card className="border-0 shadow-elevated text-center py-16 bg-gradient-premium from-card via-card to-calm-cream/20 overflow-hidden relative">
+              <div className="absolute inset-0 bg-gradient-radial from-primary/5 via-transparent to-transparent" />
+              <CardContent className="relative">
+                <div className="relative inline-flex mb-6">
+                  <div className="absolute -inset-4 bg-gradient-radial from-primary/20 to-transparent blur-xl" />
+                  <div className="relative w-20 h-20 bg-gradient-premium from-primary/20 to-calm-peach/30 rounded-2xl flex items-center justify-center">
+                    <Sparkles className="w-10 h-10 text-primary" />
+                  </div>
+                </div>
+                <h3 className="text-2xl font-display font-bold mb-3">
+                  Ready to start your week?
+                </h3>
+                <p className="text-muted-foreground mb-8 max-w-sm mx-auto leading-relaxed">
+                  Let's generate personalized wellness tasks based on your unique profile and goals.
+                </p>
+                <div className="flex gap-3 justify-center">
+                  <Button 
+                    onClick={generateTasks} 
+                    disabled={generating} 
+                    className="gap-2 btn-premium bg-primary hover:bg-primary/90"
+                    size="lg"
+                  >
+                    {generating ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-5 h-5" />
+                    )}
+                    Generate My Tasks
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowAddTask(true)} 
+                    className="gap-2 border-border/60 hover:bg-muted/50"
+                    size="lg"
+                  >
+                    <Plus className="w-5 h-5" />
+                    Custom Task
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <Target className="w-5 h-5 text-primary" />
+                  </div>
+                  <h3 className="font-display font-semibold text-xl">Weekly Tasks</h3>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setShowAddTask(!showAddTask)}
+                  className="gap-2 border-border/60 hover:bg-muted/50 hover:border-primary/30"
+                >
+                  {showAddTask ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                  {showAddTask ? "Cancel" : "Add Task"}
+                </Button>
+              </div>
+
+              {/* Add Task Form */}
+              {showAddTask && (
+                <Card className="border border-primary/20 shadow-glow-sm bg-gradient-premium from-card to-primary/5 animate-scale-in overflow-hidden">
+                  <CardContent className="p-5 space-y-4">
+                    <Input
+                      placeholder="Task title (e.g., Practice deep breathing)"
+                      value={newTaskTitle}
+                      onChange={(e) => setNewTaskTitle(e.target.value)}
+                      className="bg-background/80 border-border/60 focus:border-primary/50"
+                    />
+                    <Textarea
+                      placeholder="Description (optional)"
+                      value={newTaskDescription}
+                      onChange={(e) => setNewTaskDescription(e.target.value)}
+                      className="bg-background/80 border-border/60 focus:border-primary/50 resize-none"
+                      rows={2}
+                    />
+                    <div className="flex gap-2 justify-end">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setShowAddTask(false);
+                          setNewTaskTitle("");
+                          setNewTaskDescription("");
+                        }}
+                        className="hover:bg-muted/50"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={addCustomTask}
+                        disabled={!newTaskTitle.trim() || addingTask}
+                        className="gap-2 btn-premium"
+                      >
+                        {addingTask ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Plus className="w-4 h-4" />
+                        )}
+                        Add Task
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Task List */}
+              <div className="space-y-3">
+                {tasks
+                  .filter(task => !task.is_completed || fadingOutTaskIds.has(task.id))
+                  .map((task, index) => {
+                    const isFadingOut = fadingOutTaskIds.has(task.id);
+                    const isCelebrating = celebratingTaskId === task.id;
+                    
+                    return (
+                      <Card
+                        key={task.id}
+                        className={`group border-0 transition-all duration-300 overflow-hidden relative ${
+                          isFadingOut 
+                            ? "opacity-0 scale-95 -translate-x-4" 
+                            : isCelebrating
+                            ? "shadow-glow-sm ring-2 ring-calm-sage/50 bg-gradient-premium from-calm-sage/10 to-calm-forest/5"
+                            : task.is_completed 
+                            ? "bg-secondary/30 shadow-soft" 
+                            : "bg-card shadow-soft hover:shadow-warm hover:-translate-y-0.5"
+                        }`}
+                        style={{ 
+                          animationDelay: `${index * 60}ms`,
+                          transition: "all 0.35s cubic-bezier(0.4, 0, 0.2, 1)"
+                        }}
+                      >
+                        {isCelebrating && (
+                          <div className="absolute inset-0 bg-gradient-premium from-calm-sage/10 via-transparent to-calm-forest/5 animate-pulse" />
+                        )}
+                        <CardContent className="p-5 relative">
+                          <div className="flex items-start gap-4">
+                            <div className="relative mt-0.5">
+                              <Checkbox
+                                checked={task.is_completed}
+                                onCheckedChange={() => toggleTask(task.id, task.is_completed)}
+                                disabled={isFadingOut || isCelebrating}
+                                className={`w-6 h-6 rounded-lg border-2 transition-all ${
+                                  isCelebrating 
+                                    ? "scale-110 border-calm-forest bg-calm-forest" 
+                                    : "border-border group-hover:border-primary/50"
+                                }`}
+                                aria-label={`Mark "${task.title}" as ${task.is_completed ? "incomplete" : "complete"}`}
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className={`font-semibold text-base transition-all leading-snug ${
+                                task.is_completed ? "line-through text-muted-foreground" : "text-foreground"
+                              }`}>
+                                {task.title}
+                              </h4>
+                              <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">
+                                {task.description}
+                              </p>
+                            </div>
+                            {isCelebrating && (
+                              <div className="flex items-center gap-1.5 text-calm-forest animate-bounce-in shrink-0">
+                                <CheckCircle2 className="w-5 h-5" />
+                                <span className="text-sm font-semibold">Done!</span>
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+        </section>
       </main>
+
+      {/* Bottom spacing for mobile nav */}
+      <div className="h-24 sm:h-12" />
     </div>
   );
 }
