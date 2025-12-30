@@ -48,10 +48,12 @@ serve(async (req) => {
       .eq("id", user.id)
       .single();
 
-    // Get completed tasks from this week
+    // Get completed tasks from this week (use UTC to match frontend)
     const today = new Date();
+    const dayOfWeek = today.getUTCDay(); // 0 = Sunday
     const weekStart = new Date(today);
-    weekStart.setDate(today.getDate() - today.getDay());
+    weekStart.setUTCDate(today.getUTCDate() - dayOfWeek);
+    weekStart.setUTCHours(0, 0, 0, 0);
     
     const { data: existingTasks } = await supabase
       .from("weekly_tasks")
