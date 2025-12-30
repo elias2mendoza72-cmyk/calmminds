@@ -1,18 +1,20 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, Sparkles } from "lucide-react";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
+import CelebrationEffects from "@/components/CelebrationEffects";
 
 const MOODS = [
-  { score: 1, emoji: "😢", label: "Struggling" },
-  { score: 2, emoji: "😔", label: "Low" },
-  { score: 3, emoji: "😐", label: "Okay" },
-  { score: 4, emoji: "🙂", label: "Good" },
-  { score: 5, emoji: "😊", label: "Great" },
+  { score: 1, emoji: "😢", label: "Struggling", color: "from-rose-200 to-rose-300" },
+  { score: 2, emoji: "😔", label: "Low", color: "from-amber-200 to-amber-300" },
+  { score: 3, emoji: "😐", label: "Okay", color: "from-slate-200 to-slate-300" },
+  { score: 4, emoji: "🙂", label: "Good", color: "from-emerald-200 to-emerald-300" },
+  { score: 5, emoji: "😊", label: "Great", color: "from-sky-200 to-sky-300" },
 ];
 
 interface MoodCheckInProps {
@@ -27,9 +29,12 @@ export default function MoodCheckIn({ onMoodLogged, onStreakUpdate, onWeeklyUpda
   const [saving, setSaving] = useState(false);
   const [todaysMood, setTodaysMood] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [justLogged, setJustLogged] = useState(false);
 
   const { user } = useAuth();
   const { toast } = useToast();
+  const prefersReducedMotion = useReducedMotion();
 
   useEffect(() => {
     if (user) checkTodaysMood();
@@ -56,6 +61,17 @@ export default function MoodCheckIn({ onMoodLogged, onStreakUpdate, onWeeklyUpda
     setLoading(false);
   };
 
+  const handleMoodSelect = useCallback((score: number) => {
+    setSelectedMood(score);
+  }, []);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent, score: number) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleMoodSelect(score);
+    }
+  }, [handleMoodSelect]);
+
   const saveMood = async () => {
     if (!user || selectedMood === null) return;
     setSaving(true);
@@ -68,6 +84,13 @@ export default function MoodCheckIn({ onMoodLogged, onStreakUpdate, onWeeklyUpda
       });
 
       if (error) throw error;
+
+      // Trigger celebration
+      if (!prefersReducedMotion) {
+        setShowCelebration(true);
+        setJustLogged(true);
+        setTimeout(() => setShowCelebration(false), 3000);
+      }
 
       setTodaysMood(selectedMood);
       setSelectedMood(null);
@@ -106,53 +129,113 @@ export default function MoodCheckIn({ onMoodLogged, onStreakUpdate, onWeeklyUpda
   if (todaysMood !== null) {
     const mood = MOODS.find((m) => m.score === todaysMood);
     return (
-      <Card className="border-0 shadow-soft bg-gradient-to-br from-secondary/50 to-calm-sage/20">
-        <CardContent className="py-6 text-center">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <Check className="w-5 h-5 text-calm-forest" />
-            <span className="text-sm font-medium text-calm-forest">Today's mood logged</span>
-          </div>
-          <div className="text-4xl mb-1">{mood?.emoji}</div>
-          <p className="text-sm text-muted-foreground">{mood?.label}</p>
-        </CardContent>
-      </Card>
+      <>
+        <CelebrationEffects trigger={showCelebration} type="confetti" />
+        <Card 
+          className={`border-0 shadow-soft bg-gradient-to-br from-secondary/50 to-calm-sage/20 ${
+            justLogged && !prefersReducedMotion ? 'animate-scale-in' : ''
+          }`}
+          role="status"
+          aria-label={`Today's mood: ${mood?.label}`}
+        >
+          <CardContent className="py-6 text-center">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <div className={`${!prefersReducedMotion ? 'animate-bounce' : ''}`}>
+                <Check className="w-5 h-5 text-calm-forest" aria-hidden="true" />
+              </div>
+              <span className="text-sm font-medium text-calm-forest">Today's mood logged</span>
+            </div>
+            <div 
+              className={`text-4xl mb-1 ${!prefersReducedMotion ? 'animate-pulse' : ''}`}
+              role="img" 
+              aria-label={mood?.label}
+            >
+              {mood?.emoji}
+            </div>
+            <p className="text-sm text-muted-foreground">{mood?.label}</p>
+            {justLogged && (
+              <div className="mt-3 flex items-center justify-center gap-1 text-xs text-primary animate-fade-in">
+                <Sparkles className="w-3 h-3" aria-hidden="true" />
+                <span>Great job checking in!</span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </>
     );
   }
 
   return (
-    <Card className="border-0 shadow-warm bg-gradient-to-br from-card to-calm-peach/20">
+    <Card 
+      className="border-0 shadow-warm bg-gradient-to-br from-card to-calm-peach/20"
+      role="form"
+      aria-labelledby="mood-checkin-title"
+    >
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg font-display">How are you feeling today?</CardTitle>
+        <CardTitle id="mood-checkin-title" className="text-lg font-display">
+          How are you feeling today?
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex justify-between gap-2">
+        <div 
+          className="flex justify-between gap-2" 
+          role="radiogroup" 
+          aria-label="Select your mood"
+        >
           {MOODS.map((mood) => (
             <button
               key={mood.score}
-              onClick={() => setSelectedMood(mood.score)}
-              className={`flex-1 py-3 rounded-xl transition-all ${
-                selectedMood === mood.score
-                  ? "bg-primary/20 ring-2 ring-primary scale-105"
-                  : "bg-muted/50 hover:bg-muted"
-              }`}
+              onClick={() => handleMoodSelect(mood.score)}
+              onKeyDown={(e) => handleKeyDown(e, mood.score)}
+              role="radio"
+              aria-checked={selectedMood === mood.score}
+              aria-label={`${mood.label} mood`}
+              tabIndex={0}
+              className={`
+                flex-1 py-3 rounded-xl transition-all duration-200 
+                focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2
+                ${selectedMood === mood.score
+                  ? `bg-gradient-to-br ${mood.color} ring-2 ring-primary ${!prefersReducedMotion ? 'scale-105' : ''}`
+                  : 'bg-muted/50 hover:bg-muted hover:scale-102'
+                }
+                ${!prefersReducedMotion ? 'active:scale-95' : ''}
+              `}
             >
-              <div className="text-3xl mb-1">{mood.emoji}</div>
-              <div className="text-xs text-muted-foreground">{mood.label}</div>
+              <div 
+                className={`text-3xl mb-1 transition-transform duration-200 ${
+                  selectedMood === mood.score && !prefersReducedMotion ? 'animate-bounce-subtle' : ''
+                }`}
+                role="img"
+                aria-hidden="true"
+              >
+                {mood.emoji}
+              </div>
+              <div className="text-xs text-muted-foreground font-medium">{mood.label}</div>
             </button>
           ))}
         </div>
 
         {selectedMood !== null && (
-          <div className="space-y-3 animate-fade-in">
+          <div className={`space-y-3 ${!prefersReducedMotion ? 'animate-fade-in' : ''}`}>
             <Textarea
               placeholder="Add a note about how you're feeling (optional)"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="bg-background/50 resize-none"
+              className="bg-background/50 resize-none focus-visible:ring-primary"
               rows={2}
+              aria-label="Optional notes about your mood"
             />
-            <Button onClick={saveMood} disabled={saving} className="w-full gap-2">
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+            <Button 
+              onClick={saveMood} 
+              disabled={saving} 
+              className={`w-full gap-2 ${!prefersReducedMotion ? 'hover:scale-102 active:scale-98' : ''} transition-transform`}
+              aria-busy={saving}
+            >
+              {saving ? (
+                <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+              ) : (
+                <Check className="w-4 h-4" aria-hidden="true" />
+              )}
               Log My Mood
             </Button>
           </div>
