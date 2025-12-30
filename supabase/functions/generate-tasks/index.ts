@@ -143,13 +143,57 @@ Example format:
       content = content.replace(/```json?\n?/g, "").replace(/```/g, "").trim();
     }
 
-    let tasks;
+    let tasks: Array<{ title: string; description: string }> = [];
     try {
-      tasks = JSON.parse(content);
-      // Enforce maximum of 3 tasks
-      if (Array.isArray(tasks) && tasks.length > 3) {
+      const parsed = JSON.parse(content);
+      if (!Array.isArray(parsed)) {
+        throw new Error("AI did not return an array");
+      }
+
+      tasks = parsed
+        .filter((t) => t && typeof t.title === "string")
+        .map((t) => ({
+          title: String(t.title).trim(),
+          description: typeof t.description === "string" ? t.description.trim() : "",
+        }))
+        .filter((t) => t.title.length > 0);
+
+      // Enforce EXACTLY 3 tasks (no less, no more)
+      if (tasks.length > 3) {
         console.log(`AI generated ${tasks.length} tasks, limiting to 3`);
         tasks = tasks.slice(0, 3);
+      } else if (tasks.length < 3) {
+        console.log(`AI generated ${tasks.length} tasks, padding to 3`);
+        const fallback: Array<{ title: string; description: string }> = [
+          {
+            title: "2-minute breathing reset",
+            description:
+              "Do a short breathing exercise when you notice tension building.",
+          },
+          {
+            title: "10-minute walk outdoors",
+            description:
+              "Take a gentle walk to reset your nervous system and clear your head.",
+          },
+          {
+            title: "Evening wind-down check-in",
+            description:
+              "Spend 5 minutes noting what helped today and one small intention for tomorrow.",
+          },
+        ];
+
+        for (const f of fallback) {
+          if (tasks.length >= 3) break;
+          if (!tasks.some((t) => t.title.toLowerCase() === f.title.toLowerCase())) {
+            tasks.push(f);
+          }
+        }
+
+        tasks = tasks.slice(0, 3);
+      }
+
+      if (tasks.length !== 3) {
+        throw new Error("Failed to generate exactly 3 tasks");
       }
     } catch (e) {
       console.error("Failed to parse AI response:", content);
@@ -158,14 +202,17 @@ Example format:
 
     // Save tasks to database
     const weekStartDate = weekStart.toISOString().split("T")[0];
-    
-    // Delete existing tasks for this week that aren't completed
+    const altWeekStart = new Date(weekStart);
+    altWeekStart.setUTCDate(weekStart.getUTCDate() + 1);
+    const altWeekStartDate = altWeekStart.toISOString().split("T")[0];
+
+    // Delete existing tasks for this week that aren't completed (also clean up any legacy off-by-one week_start)
     await supabase
       .from("weekly_tasks")
       .delete()
       .eq("user_id", user.id)
-      .eq("week_start", weekStartDate)
-      .eq("is_completed", false);
+      .in("week_start", [weekStartDate, altWeekStartDate])
+      .or("is_completed.is.null,is_completed.eq.false");
 
     // Insert new tasks
     const tasksToInsert = tasks.map((task: { title: string; description: string }) => ({
@@ -173,6 +220,7 @@ Example format:
       title: task.title,
       description: task.description,
       week_start: weekStartDate,
+      is_completed: false,
     }));
 
     const { error: insertError } = await supabase

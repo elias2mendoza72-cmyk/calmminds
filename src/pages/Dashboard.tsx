@@ -117,7 +117,7 @@ export default function Dashboard() {
       .from("weekly_tasks")
       .select("*")
       .eq("user_id", user.id)
-      .gte("week_start", weekStartStr)
+      .eq("week_start", weekStartStr)
       .eq("is_completed", false)
       .order("created_at", { ascending: true });
 
@@ -132,8 +132,10 @@ export default function Dashboard() {
   const generateTasks = async () => {
     setGenerating(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
       if (!session?.access_token) {
         toast({
           title: "Please sign in",
@@ -142,7 +144,7 @@ export default function Dashboard() {
         });
         return;
       }
-      
+
       const { data, error } = await supabase.functions.invoke("generate-tasks", {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
@@ -153,7 +155,7 @@ export default function Dashboard() {
         console.error("Function error:", error);
         throw error;
       }
-      
+
       if (data?.error) {
         throw new Error(data.error);
       }
@@ -209,21 +211,25 @@ export default function Dashboard() {
       setTasks((prev) =>
         prev.map((t) =>
           t.id === taskId
-            ? { ...t, is_completed: !currentState, completed_at: !currentState ? new Date().toISOString() : null }
+            ? {
+                ...t,
+                is_completed: !currentState,
+                completed_at: !currentState ? new Date().toISOString() : null,
+              }
             : t
         )
       );
-      
+
       if (!currentState) {
         updateWeeklyProgress("task");
         checkTotalBadges();
-        
+
         setTimeout(() => {
-          setFadingOutTaskIds(prev => new Set(prev).add(taskId));
-          
+          setFadingOutTaskIds((prev) => new Set(prev).add(taskId));
+
           setTimeout(() => {
-            setTasks(prev => prev.filter(t => t.id !== taskId));
-            setFadingOutTaskIds(prev => {
+            setTasks((prev) => prev.filter((t) => t.id !== taskId));
+            setFadingOutTaskIds((prev) => {
               const newSet = new Set(prev);
               newSet.delete(taskId);
               return newSet;
@@ -240,12 +246,14 @@ export default function Dashboard() {
 
   const addCustomTask = async () => {
     if (!user || !newTaskTitle.trim()) return;
-    
+
     setAddingTask(true);
-    
+
     const today = new Date();
+    const dayOfWeek = today.getUTCDay();
     const weekStart = new Date(today);
-    weekStart.setDate(today.getDate() - today.getDay());
+    weekStart.setUTCDate(today.getUTCDate() - dayOfWeek);
+    weekStart.setUTCHours(0, 0, 0, 0);
     const weekStartDate = weekStart.toISOString().split("T")[0];
 
     const { data, error } = await supabase
@@ -255,6 +263,7 @@ export default function Dashboard() {
         title: newTaskTitle.trim(),
         description: newTaskDescription.trim() || "Custom task",
         week_start: weekStartDate,
+        is_completed: false,
       })
       .select()
       .single();
@@ -276,7 +285,7 @@ export default function Dashboard() {
         description: "Your custom task has been added.",
       });
     }
-    
+
     setAddingTask(false);
   };
 
