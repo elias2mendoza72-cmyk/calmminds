@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useGamification } from "@/hooks/useGamification";
+import { useSound } from "@/hooks/useSound";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -65,6 +66,7 @@ export default function Dashboard() {
     updateWeeklyProgress,
     checkTotalBadges,
   } = useGamification();
+  const { playCompletionSound, playSuccessSound } = useSound();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -156,8 +158,11 @@ export default function Dashboard() {
         throw new Error(data.error);
       }
 
+      // Play success sound
+      playSuccessSound();
+
       toast({
-        title: "New tasks generated!",
+        title: "Tasks generated",
         description: "Your personalized weekly tasks are ready.",
       });
 
@@ -177,6 +182,9 @@ export default function Dashboard() {
   const toggleTask = async (taskId: string, currentState: boolean) => {
     if (!currentState) {
       setCelebratingTaskId(taskId);
+      // Play completion sound
+      playCompletionSound();
+      // Haptic feedback
       if (navigator.vibrate) {
         navigator.vibrate([50, 30, 50]);
       }
@@ -262,8 +270,9 @@ export default function Dashboard() {
       setNewTaskTitle("");
       setNewTaskDescription("");
       setShowAddTask(false);
+      playSuccessSound();
       toast({
-        title: "Task added!",
+        title: "Task added",
         description: "Your custom task has been added.",
       });
     }
@@ -317,32 +326,32 @@ export default function Dashboard() {
 
       {/* Premium background with parallax gradient orbs */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        {/* Primary peach orb - moves slower */}
+        {/* Primary warm orb - moves slower */}
         <div 
-          className="absolute -top-24 -right-24 w-[500px] h-[500px] rounded-full bg-gradient-radial from-calm-peach/40 via-calm-peach/10 to-transparent blur-3xl transition-transform duration-75 ease-out will-change-transform"
+          className="absolute -top-24 -right-24 w-[500px] h-[500px] rounded-full bg-gradient-radial from-primary/20 via-primary/5 to-transparent blur-3xl transition-transform duration-75 ease-out will-change-transform"
           style={{ transform: `translate3d(${scrollY * 0.02}px, ${scrollY * 0.05}px, 0)` }}
         />
         {/* Sage orb - moves at medium speed */}
         <div 
-          className="absolute top-1/3 -left-32 w-[400px] h-[400px] rounded-full bg-gradient-radial from-calm-sage/30 via-calm-sage/5 to-transparent blur-3xl transition-transform duration-75 ease-out will-change-transform"
+          className="absolute top-1/3 -left-32 w-[400px] h-[400px] rounded-full bg-gradient-radial from-calm-sage/15 via-calm-sage/3 to-transparent blur-3xl transition-transform duration-75 ease-out will-change-transform"
           style={{ transform: `translate3d(${scrollY * -0.03}px, ${scrollY * 0.08}px, 0)` }}
         />
-        {/* Lavender orb - moves faster for depth */}
+        {/* Gold orb - moves faster for depth */}
         <div 
-          className="absolute bottom-0 right-1/4 w-[600px] h-[400px] rounded-full bg-gradient-radial from-calm-lavender/20 via-transparent to-transparent blur-3xl transition-transform duration-75 ease-out will-change-transform"
+          className="absolute bottom-0 right-1/4 w-[600px] h-[400px] rounded-full bg-gradient-radial from-calm-gold/10 via-transparent to-transparent blur-3xl transition-transform duration-75 ease-out will-change-transform"
           style={{ transform: `translate3d(${scrollY * 0.04}px, ${scrollY * -0.1}px, 0)` }}
         />
         {/* Small accent orb - moves fastest */}
         <div 
-          className="absolute top-1/2 right-1/3 w-[200px] h-[200px] rounded-full bg-gradient-radial from-primary/10 via-transparent to-transparent blur-2xl transition-transform duration-75 ease-out will-change-transform"
+          className="absolute top-1/2 right-1/3 w-[200px] h-[200px] rounded-full bg-gradient-radial from-calm-rose/10 via-transparent to-transparent blur-2xl transition-transform duration-75 ease-out will-change-transform"
           style={{ transform: `translate3d(${scrollY * -0.06}px, ${scrollY * 0.12}px, 0)` }}
         />
         {/* Subtle grid pattern with parallax */}
         <div 
-          className="absolute inset-0 opacity-[0.015] transition-transform duration-75 ease-out"
+          className="absolute inset-0 opacity-[0.02] transition-transform duration-75 ease-out"
           style={{
-            backgroundImage: `linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)`,
-            backgroundSize: '60px 60px',
+            backgroundImage: `linear-gradient(hsl(var(--foreground) / 0.3) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground) / 0.3) 1px, transparent 1px)`,
+            backgroundSize: '80px 80px',
             transform: `translate3d(0, ${scrollY * 0.02}px, 0)`,
           }}
         />
