@@ -91,15 +91,20 @@ export default function Dashboard() {
     if (!user) return;
     setLoading(true);
 
+    // Get the start of the current week (Sunday)
     const today = new Date();
+    const dayOfWeek = today.getUTCDay(); // 0 = Sunday
     const weekStart = new Date(today);
-    weekStart.setDate(today.getDate() - today.getDay());
+    weekStart.setUTCDate(today.getUTCDate() - dayOfWeek);
+    weekStart.setUTCHours(0, 0, 0, 0);
+    const weekStartStr = weekStart.toISOString().split("T")[0];
 
     const { data, error } = await supabase
       .from("weekly_tasks")
       .select("*")
       .eq("user_id", user.id)
-      .gte("week_start", weekStart.toISOString().split("T")[0])
+      .gte("week_start", weekStartStr)
+      .eq("is_completed", false) // Only fetch incomplete tasks
       .order("created_at", { ascending: true });
 
     if (error) {
