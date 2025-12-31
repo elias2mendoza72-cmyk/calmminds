@@ -387,6 +387,15 @@ export default function Dashboard() {
               variant="ghost"
               size="sm"
               className="gap-2 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+              onClick={() => navigate("/meditations")}
+            >
+              <Sparkles className="w-4 h-4" />
+              <span className="hidden sm:inline">Meditate</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-2 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
               onClick={() => navigate("/journal")}
             >
               <BookOpen className="w-4 h-4" />
