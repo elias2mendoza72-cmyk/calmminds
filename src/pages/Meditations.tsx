@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Play, Pause, Clock, Leaf, Moon, Sun, Wind, Waves, Cloud, Heart, Brain, Sparkles } from "lucide-react";
+import { ArrowLeft, Play, Pause, Clock, Leaf, Moon, Sun, Wind, Waves, Cloud, Heart, Brain, Sparkles, Volume2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { useSound } from "@/hooks/useSound";
+import { useMeditationAudio, meditationSoundMap } from "@/hooks/useMeditationAudio";
 
 interface Meditation {
   id: string;
@@ -116,32 +117,68 @@ export default function Meditations() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const { playClickSound, playSuccessSound } = useSound();
+  const { play: playAmbient, stop: stopAmbient } = useMeditationAudio();
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+      }
+      stopAmbient();
+    };
+  }, [stopAmbient]);
 
   const handlePlay = (id: string) => {
     playClickSound();
+    
+    // If clicking the same meditation that's playing, pause it
     if (activeMeditation === id && isPlaying) {
       setIsPlaying(false);
-    } else {
-      setActiveMeditation(id);
-      setIsPlaying(true);
-      setProgress(0);
-      
-      // Simulate progress
-      const meditation = meditations.find(m => m.id === id);
-      if (meditation) {
-        const totalMs = meditation.duration * 60 * 1000;
-        const interval = setInterval(() => {
-          setProgress(prev => {
-            if (prev >= 100) {
-              clearInterval(interval);
-              setIsPlaying(false);
-              playSuccessSound();
-              return 100;
-            }
-            return prev + (100 / (totalMs / 100));
-          });
-        }, 100);
+      stopAmbient();
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
       }
+      return;
+    }
+
+    // Stop any existing playback
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+    }
+    stopAmbient();
+
+    // Start new meditation
+    setActiveMeditation(id);
+    setIsPlaying(true);
+    setProgress(0);
+
+    // Play ambient sound
+    const soundType = meditationSoundMap[id] || 'drone';
+    playAmbient(soundType);
+
+    // Progress tracking
+    const meditation = meditations.find(m => m.id === id);
+    if (meditation) {
+      const totalMs = meditation.duration * 60 * 1000;
+      const updateInterval = 100;
+      const progressIncrement = (100 / (totalMs / updateInterval));
+
+      progressIntervalRef.current = setInterval(() => {
+        setProgress(prev => {
+          if (prev >= 100) {
+            if (progressIntervalRef.current) {
+              clearInterval(progressIntervalRef.current);
+            }
+            stopAmbient();
+            setIsPlaying(false);
+            playSuccessSound();
+            return 100;
+          }
+          return prev + progressIncrement;
+        });
+      }, updateInterval);
     }
   };
 
