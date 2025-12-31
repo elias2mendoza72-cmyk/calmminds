@@ -14,6 +14,7 @@ import Dashboard from "./pages/Dashboard";
 import PanicMode from "./pages/PanicMode";
 import Journal from "./pages/Journal";
 import Settings from "./pages/Settings";
+import Meditations from "./pages/Meditations";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -65,6 +66,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Settings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/meditations"
+              element={
+                <ProtectedRoute>
+                  <Meditations />
                 </ProtectedRoute>
               }
             />
