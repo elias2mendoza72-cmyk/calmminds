@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Play, Pause, Clock, Leaf, Moon, Sun, Wind, Waves, Cloud, Heart, Brain, Sparkles, Volume2 } from "lucide-react";
+import { ArrowLeft, Play, Pause, Clock, Leaf, Moon, Sun, Wind, Waves, Cloud, Heart, Brain, Sparkles, Gamepad2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,8 @@ import { Progress } from "@/components/ui/progress";
 import { useSound } from "@/hooks/useSound";
 import { useMeditationAudio, meditationSoundMap } from "@/hooks/useMeditationAudio";
 import BubblePopGame from "@/components/panic/BubblePopGame";
+import MemoryMatchGame from "@/components/games/MemoryMatchGame";
+import ColorSortGame from "@/components/games/ColorSortGame";
 
 interface Meditation {
   id: string;
@@ -307,13 +309,37 @@ export default function Meditations() {
         <Card className="mt-8 border-border/50">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-primary" />
+              <Gamepad2 className="w-5 h-5 text-primary" />
               Mindful Games
             </CardTitle>
             <CardDescription>Calming activities to ease your mind</CardDescription>
           </CardHeader>
           <CardContent>
-            <BubblePopGame />
+            <Tabs defaultValue="bubbles" className="space-y-4">
+              <TabsList className="grid w-full grid-cols-3 bg-secondary/50">
+                <TabsTrigger value="bubbles" className="text-xs sm:text-sm">
+                  🫧 Bubbles
+                </TabsTrigger>
+                <TabsTrigger value="memory" className="text-xs sm:text-sm">
+                  🧠 Memory
+                </TabsTrigger>
+                <TabsTrigger value="colors" className="text-xs sm:text-sm">
+                  🎨 Colors
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="bubbles">
+                <BubblePopGame />
+              </TabsContent>
+
+              <TabsContent value="memory">
+                <MemoryMatchGame />
+              </TabsContent>
+
+              <TabsContent value="colors">
+                <ColorSortGame />
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
 
