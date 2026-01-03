@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { useSound } from "@/hooks/useSound";
 import { useMeditationAudio, meditationSoundMap } from "@/hooks/useMeditationAudio";
+import BubblePopGame from "@/components/panic/BubblePopGame";
 
 interface Meditation {
   id: string;
@@ -301,6 +302,20 @@ export default function Meditations() {
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* Mindful Games Section */}
+        <Card className="mt-8 border-border/50">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-primary" />
+              Mindful Games
+            </CardTitle>
+            <CardDescription>Calming activities to ease your mind</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <BubblePopGame />
+          </CardContent>
+        </Card>
 
         {/* Quick Stats */}
         <Card className="mt-8 border-border/50">

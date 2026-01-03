@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 
@@ -80,64 +79,59 @@ export default function BubblePopGame() {
 
   return (
     <div className="space-y-4">
-      <Card className="bg-panic-accent/10 border-panic-accent/20">
-        <CardContent className="p-4">
-          <div className="flex justify-between items-center mb-3">
-            <div>
-              <span className="text-panic-text/60 text-sm">Bubbles popped</span>
-              <p className="text-2xl font-display font-bold text-panic-accent">{score}</p>
+      <div className="flex justify-between items-center mb-3">
+        <div>
+          <span className="text-muted-foreground text-sm">Bubbles popped</span>
+          <p className="text-2xl font-bold text-primary">{score}</p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={startGame}
+        >
+          <RefreshCw className="w-4 h-4 mr-1" />
+          {isPlaying ? "Restart" : "Start"}
+        </Button>
+      </div>
+
+      <div 
+        className="relative h-80 bg-gradient-to-b from-primary/10 to-secondary/20 rounded-xl overflow-hidden border border-border/30"
+        style={{ touchAction: "none" }}
+      >
+        {!isPlaying && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-center">
+              <p className="text-4xl mb-2">🫧</p>
+              <p className="text-muted-foreground text-sm">Tap bubbles to pop them</p>
+              <Button
+                onClick={startGame}
+                className="mt-3"
+              >
+                Start Popping
+              </Button>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={startGame}
-              className="border-panic-accent/30 text-panic-accent hover:bg-panic-accent/20"
-            >
-              <RefreshCw className="w-4 h-4 mr-1" />
-              {isPlaying ? "Restart" : "Start"}
-            </Button>
           </div>
+        )}
 
-          <div 
-            className="relative h-80 bg-gradient-to-b from-blue-900/30 to-purple-900/30 rounded-xl overflow-hidden"
-            style={{ touchAction: "none" }}
-          >
-            {!isPlaying && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center">
-                  <p className="text-4xl mb-2">🫧</p>
-                  <p className="text-panic-text/60 text-sm">Tap bubbles to pop them</p>
-                  <Button
-                    onClick={startGame}
-                    className="mt-3 bg-panic-accent hover:bg-panic-accent/80"
-                  >
-                    Start Popping
-                  </Button>
-                </div>
-              </div>
-            )}
+        {bubbles.map(bubble => (
+          <button
+            key={bubble.id}
+            onClick={() => popBubble(bubble.id)}
+            className={`absolute rounded-full transition-transform active:scale-75 ${bubble.color} 
+              shadow-lg backdrop-blur-sm border border-white/30
+              before:absolute before:inset-2 before:rounded-full before:bg-white/30 before:blur-sm`}
+            style={{
+              left: `${bubble.x}%`,
+              top: `${bubble.y}%`,
+              width: bubble.size,
+              height: bubble.size,
+              transform: "translate(-50%, -50%)",
+            }}
+          />
+        ))}
+      </div>
 
-            {bubbles.map(bubble => (
-              <button
-                key={bubble.id}
-                onClick={() => popBubble(bubble.id)}
-                className={`absolute rounded-full transition-transform active:scale-75 ${bubble.color} 
-                  shadow-lg backdrop-blur-sm border border-white/30
-                  before:absolute before:inset-2 before:rounded-full before:bg-white/30 before:blur-sm`}
-                style={{
-                  left: `${bubble.x}%`,
-                  top: `${bubble.y}%`,
-                  width: bubble.size,
-                  height: bubble.size,
-                  transform: "translate(-50%, -50%)",
-                }}
-              />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      <p className="text-center text-panic-text/60 text-sm">
+      <p className="text-center text-muted-foreground text-sm">
         Let your worries float away with each pop 🫧
       </p>
     </div>
