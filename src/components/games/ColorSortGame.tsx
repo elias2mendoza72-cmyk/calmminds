@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Check, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
+import { useSound } from "@/hooks/useSound";
 
 const GRADIENTS = [
   { 
@@ -43,6 +44,7 @@ export default function ColorSortGame() {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [moves, setMoves] = useState(0);
   const [isSolved, setIsSolved] = useState(false);
+  const { playClickSound, playSuccessSound, playCompletionSound } = useSound();
 
   const initializeGame = () => {
     const newGradient = GRADIENTS[Math.floor(Math.random() * GRADIENTS.length)];
@@ -77,6 +79,7 @@ export default function ColorSortGame() {
     if (isSolved) return;
 
     if (selectedIndex === null) {
+      playClickSound();
       setSelectedIndex(index);
     } else if (selectedIndex === index) {
       setSelectedIndex(null);
@@ -87,11 +90,13 @@ export default function ColorSortGame() {
       setTiles(newTiles);
       setMoves(m => m + 1);
       setSelectedIndex(null);
+      playClickSound();
 
       // Check if solved
       const solved = newTiles.every((tile, idx) => tile.correctIndex === idx);
       if (solved) {
         setIsSolved(true);
+        playCompletionSound();
         toast.success("Perfect gradient! 🎨");
       }
     }
