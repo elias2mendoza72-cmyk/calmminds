@@ -35,9 +35,8 @@ import ColoringCanvas from "@/components/panic/ColoringCanvas";
 import CalmingVideos from "@/components/panic/CalmingVideos";
 import EmergencyContacts from "@/components/panic/EmergencyContacts";
 import BubblePopGame from "@/components/panic/BubblePopGame";
-import ZenPuzzle from "@/components/panic/ZenPuzzle";
 
-type PanicFeature = "breathing" | "grounding" | "chat" | "media" | "game" | "visualization" | "affirmations" | "coloring" | "videos" | "emergency" | "bubbles" | "puzzle" | null;
+type PanicFeature = "breathing" | "grounding" | "chat" | "media" | "game" | "visualization" | "affirmations" | "coloring" | "videos" | "emergency" | "bubbles" | null;
 
 // Feature categories for better organization
 const FEATURE_CATEGORIES = [
@@ -49,7 +48,7 @@ const FEATURE_CATEGORIES = [
   {
     name: "Interactive Activities",
     description: "Mindful distractions",
-    features: ["game", "bubbles", "puzzle", "coloring"],
+    features: ["game", "bubbles", "coloring"],
   },
   {
     name: "Media & Support",
@@ -66,7 +65,6 @@ const ALL_FEATURES = [
   { id: "videos" as const, icon: Video, label: "Videos", description: "Nature scenes", color: "from-sky-500/20 to-blue-500/20", hoverColor: "group-hover:from-sky-500/30 group-hover:to-blue-500/30" },
   { id: "game" as const, icon: Gamepad2, label: "Memory", description: "Card matching", color: "from-rose-500/20 to-red-500/20", hoverColor: "group-hover:from-rose-500/30 group-hover:to-red-500/30" },
   { id: "bubbles" as const, icon: Circle, label: "Bubbles", description: "Pop to relax", color: "from-cyan-500/20 to-blue-500/20", hoverColor: "group-hover:from-cyan-500/30 group-hover:to-blue-500/30" },
-  { id: "puzzle" as const, icon: Grid3X3, label: "Puzzle", description: "Zen patterns", color: "from-amber-500/20 to-yellow-500/20", hoverColor: "group-hover:from-amber-500/30 group-hover:to-yellow-500/30" },
   { id: "visualization" as const, icon: Mountain, label: "Journey", description: "Guided imagery", color: "from-teal-500/20 to-cyan-500/20", hoverColor: "group-hover:from-teal-500/30 group-hover:to-cyan-500/30" },
   { id: "affirmations" as const, icon: Sparkles, label: "Affirm", description: "Positive words", color: "from-yellow-500/20 to-orange-500/20", hoverColor: "group-hover:from-yellow-500/30 group-hover:to-orange-500/30" },
   { id: "coloring" as const, icon: Palette, label: "Color", description: "Mindful art", color: "from-indigo-500/20 to-violet-500/20", hoverColor: "group-hover:from-indigo-500/30 group-hover:to-violet-500/30" },
@@ -282,7 +280,6 @@ export default function PanicMode() {
             {activeFeature === "videos" && <CalmingVideos />}
             {activeFeature === "game" && <MiniGame />}
             {activeFeature === "bubbles" && <BubblePopGame />}
-            {activeFeature === "puzzle" && <ZenPuzzle />}
             {activeFeature === "visualization" && <GuidedVisualization />}
             {activeFeature === "affirmations" && <PositiveAffirmations />}
             {activeFeature === "coloring" && <ColoringCanvas />}

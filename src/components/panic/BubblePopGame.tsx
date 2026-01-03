@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
+import { useSound } from "@/hooks/useSound";
 
 interface Bubble {
   id: number;
@@ -25,6 +26,7 @@ export default function BubblePopGame() {
   const [bubbles, setBubbles] = useState<Bubble[]>([]);
   const [score, setScore] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const { playClickSound, playSuccessSound } = useSound();
 
   const createBubble = useCallback((): Bubble => {
     return {
@@ -50,7 +52,16 @@ export default function BubblePopGame() {
         b.id === id ? { ...b, popped: true } : b
       )
     );
-    setScore(s => s + 1);
+    setScore(s => {
+      const newScore = s + 1;
+      // Play sounds on milestones
+      if (newScore % 10 === 0) {
+        playSuccessSound();
+      } else {
+        playClickSound();
+      }
+      return newScore;
+    });
   };
 
   useEffect(() => {

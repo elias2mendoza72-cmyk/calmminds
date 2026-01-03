@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Trophy, RotateCcw, Sparkles } from "lucide-react";
+import { useSound } from "@/hooks/useSound";
 
 interface Tile {
   id: number;
@@ -18,6 +19,7 @@ export default function MemoryMatchGame() {
   const [moves, setMoves] = useState(0);
   const [matchedPairs, setMatchedPairs] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
+  const { playClickSound, playSuccessSound, playCompletionSound } = useSound();
 
   const initializeGame = useCallback(() => {
     const shuffledEmojis = [...EMOJIS, ...EMOJIS]
@@ -43,6 +45,8 @@ export default function MemoryMatchGame() {
     if (flippedTiles.length === 2) return;
     if (tiles[id].isFlipped || tiles[id].isMatched) return;
 
+    playClickSound();
+    
     const newTiles = [...tiles];
     newTiles[id].isFlipped = true;
     setTiles(newTiles);
@@ -56,6 +60,7 @@ export default function MemoryMatchGame() {
       
       if (tiles[first].emoji === tiles[second].emoji) {
         setTimeout(() => {
+          playSuccessSound();
           const matchedTiles = [...tiles];
           matchedTiles[first].isMatched = true;
           matchedTiles[second].isMatched = true;
@@ -64,6 +69,7 @@ export default function MemoryMatchGame() {
             const newPairs = prev + 1;
             if (newPairs === EMOJIS.length) {
               setIsComplete(true);
+              setTimeout(() => playCompletionSound(), 300);
             }
             return newPairs;
           });
